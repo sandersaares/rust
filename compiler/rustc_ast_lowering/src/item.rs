@@ -1089,17 +1089,27 @@ impl<'hir> LoweringContext<'_, 'hir> {
             AssocItemKind::MacCall(..) | AssocItemKind::DelegationMac(..) => {
                 panic!("macros should have been expanded by now")
             }
-            AssocItemKind::Trait(..) => {
-                let guar =
-                    self.dcx().span_err(i.span, "associated traits are not yet fully implemented");
-                let err_ty = self.arena.alloc(self.ty(i.span, hir::TyKind::Err(guar)));
-                let generics = self.lower_generics(
+            AssocItemKind::Trait(box AssocTraitItem { ident, bounds, has_value, .. }) => {
+                // Lower associated trait as TraitItemKind::Type in the HIR.
+                // The semantic distinction (AssocKind::Trait vs AssocKind::Type)
+                // is tracked at the ty level, not in the HIR.
+                let (generics, kind) = self.lower_generics(
                     &Generics::default(),
                     i.id,
                     ImplTraitContext::Disallowed(ImplTraitPosition::Generic),
-                    |_this| hir::TraitItemKind::Type(&[], Some(err_ty)),
+                    |this| {
+                        let hir_bounds = this.lower_param_bounds(
+                            bounds,
+                            RelaxedBoundPolicy::Allowed,
+                            ImplTraitContext::Disallowed(ImplTraitPosition::Generic),
+                        );
+                        // For declarations (no value), lower as Type with no concrete type.
+                        // For defaults (has value), we'd need to lower the trait ref as a type,
+                        // but for now we treat defaults as not having a value at the HIR level.
+                        hir::TraitItemKind::Type(hir_bounds, None)
+                    },
                 );
-                (i.kind.ident().unwrap(), generics.0, generics.1, false)
+                (*ident, generics, kind, *has_value)
             }
         };
 
@@ -1296,12 +1306,17 @@ impl<'hir> LoweringContext<'_, 'hir> {
             AssocItemKind::MacCall(..) | AssocItemKind::DelegationMac(..) => {
                 panic!("macros should have been expanded by now")
             }
-            AssocItemKind::Trait(..) => {
-                let guar =
-                    self.dcx().span_err(i.span, "associated traits are not yet fully implemented");
+            AssocItemKind::Trait(box AssocTraitItem { ident, .. }) => {
+                // Lower associated trait in impl as ImplItemKind::Type.
+                // The actual trait value resolution happens in the trait solver (Phase 3).
+                // For now, use a placeholder error type that won't emit a user-facing error.
+                let guar = self.dcx().span_delayed_bug(
+                    i.span,
+                    "associated trait impl items are not yet fully supported",
+                );
                 let err_ty = self.arena.alloc(self.ty(i.span, hir::TyKind::Err(guar)));
                 (
-                    i.kind.ident().unwrap(),
+                    *ident,
                     self.lower_generics(
                         &Generics::default(),
                         i.id,

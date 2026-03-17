@@ -15,17 +15,5 @@ LL | #![feature(associated_traits)]
    = note: see issue #99999 <https://github.com/rust-lang/rust/issues/99999> for more information
    = note: `#[warn(incomplete_features)]` on by default
 
-error: associated traits are not yet fully implemented
-  --> $DIR/parse-basic.rs:11:5
-   |
-LL |     trait Bar;
-   |     ^^^^^^^^^^
-
-error: associated traits are not yet fully implemented
-  --> $DIR/parse-basic.rs:17:5
-   |
-LL |     trait Bar = Send;
-   |     ^^^^^^^^^^^^^^^^^
-
-error: aborting due to 3 previous errors; 1 warning emitted
+error: aborting due to 1 previous error; 1 warning emitted
 
