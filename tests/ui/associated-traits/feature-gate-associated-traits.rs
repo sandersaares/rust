@@ -1,7 +1,8 @@
 // Verifies that `associated_traits` is feature-gated.
-// Once parsing is implemented, this test should produce a feature gate error
-// when the `associated_traits` feature is not enabled.
-//@ ignore-test: not yet implemented (associated_traits)
+// Without the feature, the parser still parses `trait Bar;` as an associated
+// trait but the feature gate check emits an error.
+//@ compile-flags: --crate-type=lib
+//@ known-bug: #99999
 
 trait Foo {
     trait Bar;

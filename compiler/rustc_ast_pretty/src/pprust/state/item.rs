@@ -622,6 +622,26 @@ impl<'a> State<'a> {
                     *defaultness,
                 );
             }
+            ast::AssocItemKind::Trait(box ast::AssocTraitItem {
+                defaultness: _,
+                ident,
+                bounds,
+                value,
+                has_value,
+            }) => {
+                self.word_space("trait");
+                self.print_ident(*ident);
+                if !bounds.is_empty() {
+                    self.word_nbsp(":");
+                    self.print_type_bounds(bounds);
+                }
+                if *has_value {
+                    self.space();
+                    self.word_space("=");
+                    self.print_type_bounds(value);
+                }
+                self.word(";");
+            }
             ast::AssocItemKind::MacCall(m) => {
                 self.print_mac(m);
                 if m.args.need_semicolon() {

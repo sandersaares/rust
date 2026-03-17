@@ -760,6 +760,8 @@ impl<'a> FmtVisitor<'a> {
                 (_, Type(ty)) if is_type(&ty.ty) => Ordering::Greater,
                 (Type(..), _) => Ordering::Less,
                 (_, Type(..)) => Ordering::Greater,
+                (Trait(..), _) => Ordering::Less,
+                (_, Trait(..)) => Ordering::Greater,
                 (Const(..), _) => Ordering::Less,
                 (_, Const(..)) => Ordering::Greater,
                 (MacCall(..), _) => Ordering::Less,

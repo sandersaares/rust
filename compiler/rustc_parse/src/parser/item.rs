@@ -1221,6 +1221,30 @@ impl<'a> Parser<'a> {
                                 define_opaque,
                             }))
                         }
+                        // Associated trait: `trait Bar;` or `trait Bar = Send;`
+                        // These are parsed as ItemKind::Trait (declaration) or
+                        // ItemKind::TraitAlias (definition) by parse_item_trait,
+                        // then intercepted here and converted to AssocItemKind::Trait.
+                        ItemKind::Trait(box Trait { ident, bounds, .. }) => {
+                            self.psess.gated_spans.gate(sym::associated_traits, span);
+                            AssocItemKind::Trait(Box::new(AssocTraitItem {
+                                defaultness: Defaultness::Implicit,
+                                ident,
+                                bounds,
+                                value: Vec::new(),
+                                has_value: false,
+                            }))
+                        }
+                        ItemKind::TraitAlias(box TraitAlias { ident, bounds, .. }) => {
+                            self.psess.gated_spans.gate(sym::associated_traits, span);
+                            AssocItemKind::Trait(Box::new(AssocTraitItem {
+                                defaultness: Defaultness::Implicit,
+                                ident,
+                                bounds: Vec::new(),
+                                value: bounds,
+                                has_value: true,
+                            }))
+                        }
                         _ => return self.error_bad_item_kind(span, &kind, "`trait`s or `impl`s"),
                     },
                 };

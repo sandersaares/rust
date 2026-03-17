@@ -1089,6 +1089,18 @@ impl<'hir> LoweringContext<'_, 'hir> {
             AssocItemKind::MacCall(..) | AssocItemKind::DelegationMac(..) => {
                 panic!("macros should have been expanded by now")
             }
+            AssocItemKind::Trait(..) => {
+                let guar =
+                    self.dcx().span_err(i.span, "associated traits are not yet fully implemented");
+                let err_ty = self.arena.alloc(self.ty(i.span, hir::TyKind::Err(guar)));
+                let generics = self.lower_generics(
+                    &Generics::default(),
+                    i.id,
+                    ImplTraitContext::Disallowed(ImplTraitPosition::Generic),
+                    |_this| hir::TraitItemKind::Type(&[], Some(err_ty)),
+                );
+                (i.kind.ident().unwrap(), generics.0, generics.1, false)
+            }
         };
 
         let defaultness = match i.kind.defaultness() {
@@ -1283,6 +1295,20 @@ impl<'hir> LoweringContext<'_, 'hir> {
             }
             AssocItemKind::MacCall(..) | AssocItemKind::DelegationMac(..) => {
                 panic!("macros should have been expanded by now")
+            }
+            AssocItemKind::Trait(..) => {
+                let guar =
+                    self.dcx().span_err(i.span, "associated traits are not yet fully implemented");
+                let err_ty = self.arena.alloc(self.ty(i.span, hir::TyKind::Err(guar)));
+                (
+                    i.kind.ident().unwrap(),
+                    self.lower_generics(
+                        &Generics::default(),
+                        i.id,
+                        ImplTraitContext::Disallowed(ImplTraitPosition::Generic),
+                        |_this| hir::ImplItemKind::Type(err_ty),
+                    ),
+                )
             }
         };
 

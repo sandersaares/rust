@@ -718,7 +718,7 @@ impl<'v> ast_visit::Visitor<'v> for StatCollector<'v> {
     fn visit_assoc_item(&mut self, i: &'v ast::AssocItem, ctxt: ast_visit::AssocCtxt) {
         record_variants!(
             (self, i, i.kind, None, ast, AssocItem, AssocItemKind),
-            [Const, Fn, Type, MacCall, Delegation, DelegationMac]
+            [Const, Fn, Type, Trait, MacCall, Delegation, DelegationMac]
         );
         ast_visit::walk_assoc_item(self, i, ctxt);
     }

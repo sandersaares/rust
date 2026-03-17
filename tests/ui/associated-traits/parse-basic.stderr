@@ -1,0 +1,31 @@
+error: expected `{}`, found `;`
+  --> $DIR/parse-basic.rs:11:14
+   |
+LL |     trait Bar;
+   |              ^
+   |
+   = help: try using `{}` instead
+
+warning: the feature `associated_traits` is incomplete and may not be safe to use and/or cause compiler crashes
+  --> $DIR/parse-basic.rs:8:12
+   |
+LL | #![feature(associated_traits)]
+   |            ^^^^^^^^^^^^^^^^^
+   |
+   = note: see issue #99999 <https://github.com/rust-lang/rust/issues/99999> for more information
+   = note: `#[warn(incomplete_features)]` on by default
+
+error: associated traits are not yet fully implemented
+  --> $DIR/parse-basic.rs:11:5
+   |
+LL |     trait Bar;
+   |     ^^^^^^^^^^
+
+error: associated traits are not yet fully implemented
+  --> $DIR/parse-basic.rs:17:5
+   |
+LL |     trait Bar = Send;
+   |     ^^^^^^^^^^^^^^^^^
+
+error: aborting due to 3 previous errors; 1 warning emitted
+

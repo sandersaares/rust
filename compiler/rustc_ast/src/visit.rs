@@ -405,6 +405,7 @@ macro_rules! common_visitor_and_walkers {
             AsmMacro,
             AssignOpKind,
             AssocItemConstraintKind,
+            AssocTraitItem,
             AttrArgs,
             AttrItem,
             AttrKind,
@@ -886,6 +887,8 @@ macro_rules! common_visitor_and_walkers {
                     }
                     AssocItemKind::Type(alias) =>
                         visit_visitable!($($mut)? vis, alias),
+                    AssocItemKind::Trait(assoc_trait) =>
+                        visit_visitable!($($mut)? vis, assoc_trait),
                     AssocItemKind::MacCall(mac) =>
                         visit_visitable!($($mut)? vis, mac),
                     AssocItemKind::Delegation(delegation) =>

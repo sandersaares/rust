@@ -341,6 +341,7 @@ impl<'ast, 'tcx> visit::Visitor<'ast> for LanguageItemCollector<'ast, 'tcx> {
             }
             ast::AssocItemKind::Const(ct) => (Target::AssocConst, Some(&ct.generics)),
             ast::AssocItemKind::Type(ty) => (Target::AssocTy, Some(&ty.generics)),
+            ast::AssocItemKind::Trait(_) => (Target::AssocTy, None),
             ast::AssocItemKind::MacCall(_) | ast::AssocItemKind::DelegationMac(_) => {
                 unreachable!("macros should have been expanded")
             }

@@ -250,6 +250,7 @@ impl Target {
                 }
             }),
             AssocItemKind::Type(_) => Target::AssocTy,
+            AssocItemKind::Trait(_) => Target::AssocTy,
             AssocItemKind::Delegation(_) => Target::Delegation { mac: false },
             AssocItemKind::DelegationMac(_) => Target::Delegation { mac: true },
             AssocItemKind::MacCall(_) => Target::MacroCall,

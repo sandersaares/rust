@@ -3800,6 +3800,25 @@ pub struct TyAlias {
     pub ty: Option<Box<Ty>>,
 }
 
+/// Represents an associated trait item in a trait or impl block.
+///
+/// In a trait definition: `trait Bar;` or `trait Bar: Clone;` or `trait Bar = Send;` (default)
+/// In an impl block: `trait Bar = Send;` or `trait Bar = Send + Clone;`
+#[derive(Clone, Encodable, Decodable, Debug, Walkable)]
+pub struct AssocTraitItem {
+    pub defaultness: Defaultness,
+    pub ident: Ident,
+    /// Bounds on the associated trait declaration (e.g., `trait Bar: Clone;`).
+    #[visitable(extra = BoundKind::Bound)]
+    pub bounds: GenericBounds,
+    /// The trait(s) this associated trait resolves to (e.g., `= Send + Clone`).
+    /// `None` means this is a declaration without a default.
+    #[visitable(extra = BoundKind::Bound)]
+    pub value: GenericBounds,
+    #[visitable(ignore)]
+    pub has_value: bool,
+}
+
 #[derive(Clone, Encodable, Decodable, Debug)]
 pub struct Impl {
     pub generics: Generics,
@@ -4148,6 +4167,8 @@ pub enum AssocItemKind {
     Fn(Box<Fn>),
     /// An associated type.
     Type(Box<TyAlias>),
+    /// An associated trait.
+    Trait(Box<AssocTraitItem>),
     /// A macro expanding to associated items.
     MacCall(Box<MacCall>),
     /// An associated delegation item.
@@ -4162,6 +4183,7 @@ impl AssocItemKind {
             AssocItemKind::Const(box ConstItem { ident, .. })
             | AssocItemKind::Fn(box Fn { ident, .. })
             | AssocItemKind::Type(box TyAlias { ident, .. })
+            | AssocItemKind::Trait(box AssocTraitItem { ident, .. })
             | AssocItemKind::Delegation(box Delegation { ident, .. }) => Some(ident),
 
             AssocItemKind::MacCall(_) | AssocItemKind::DelegationMac(_) => None,
@@ -4172,7 +4194,8 @@ impl AssocItemKind {
         match *self {
             Self::Const(box ConstItem { defaultness, .. })
             | Self::Fn(box Fn { defaultness, .. })
-            | Self::Type(box TyAlias { defaultness, .. }) => defaultness,
+            | Self::Type(box TyAlias { defaultness, .. })
+            | Self::Trait(box AssocTraitItem { defaultness, .. }) => defaultness,
             Self::MacCall(..) | Self::Delegation(..) | Self::DelegationMac(..) => {
                 Defaultness::Implicit
             }
@@ -4186,6 +4209,12 @@ impl From<AssocItemKind> for ItemKind {
             AssocItemKind::Const(item) => ItemKind::Const(item),
             AssocItemKind::Fn(fn_kind) => ItemKind::Fn(fn_kind),
             AssocItemKind::Type(ty_alias_kind) => ItemKind::TyAlias(ty_alias_kind),
+            AssocItemKind::Trait(assoc_trait) => ItemKind::TraitAlias(Box::new(TraitAlias {
+                constness: Const::No,
+                ident: assoc_trait.ident,
+                generics: Generics::default(),
+                bounds: assoc_trait.value,
+            })),
             AssocItemKind::MacCall(a) => ItemKind::MacCall(a),
             AssocItemKind::Delegation(delegation) => ItemKind::Delegation(delegation),
             AssocItemKind::DelegationMac(delegation) => ItemKind::DelegationMac(delegation),

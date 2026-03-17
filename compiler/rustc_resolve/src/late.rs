@@ -3342,6 +3342,9 @@ impl<'a, 'ast, 'ra, 'tcx> LateResolutionVisitor<'a, 'ast, 'ra, 'tcx> {
                     .with_lifetime_rib(LifetimeRibKind::AnonymousReportError, |this| {
                         walk_assoc_item(this, generics, LifetimeBinderKind::Item, item)
                     }),
+                AssocItemKind::Trait(..) => {
+                    visit::walk_assoc_item(self, item, AssocCtxt::Trait);
+                }
                 AssocItemKind::MacCall(_) | AssocItemKind::DelegationMac(..) => {
                     panic!("unexpanded macro in resolve!")
                 }
@@ -3628,6 +3631,22 @@ impl<'a, 'ast, 'ra, 'tcx> LateResolutionVisitor<'a, 'ast, 'ra, 'tcx> {
                 );
                 self.diag_metadata.in_non_gat_assoc_type = None;
             }
+            AssocItemKind::Trait(box ast::AssocTraitItem { ident, .. }) => {
+                debug!("resolve_implementation AssocItemKind::Trait");
+                self.with_lifetime_rib(LifetimeRibKind::AnonymousReportError, |this| {
+                    this.check_trait_item(
+                        item.id,
+                        *ident,
+                        &item.kind,
+                        TypeNS,
+                        item.span,
+                        seen_trait_items,
+                        |i, s, c| TypeNotMemberOfTrait(i, s, c),
+                    );
+
+                    visit::walk_assoc_item(this, item, AssocCtxt::Impl { of_trait: true });
+                });
+            }
             AssocItemKind::Delegation(box delegation) => {
                 debug!("resolve_implementation AssocItemKind::Delegation");
                 self.with_generic_param_rib(
@@ -3740,6 +3759,7 @@ impl<'a, 'ast, 'ra, 'tcx> LateResolutionVisitor<'a, 'ast, 'ra, 'tcx> {
 
         match (def_kind, kind) {
             (DefKind::AssocTy, AssocItemKind::Type(..))
+            | (DefKind::AssocTy, AssocItemKind::Trait(..))
             | (DefKind::AssocFn, AssocItemKind::Fn(..))
             | (DefKind::AssocConst { .. }, AssocItemKind::Const(..))
             | (DefKind::AssocFn, AssocItemKind::Delegation(..)) => {
@@ -3755,6 +3775,7 @@ impl<'a, 'ast, 'ra, 'tcx> LateResolutionVisitor<'a, 'ast, 'ra, 'tcx> {
             AssocItemKind::Const(..) => (E0323, "const"),
             AssocItemKind::Fn(..) => (E0324, "method"),
             AssocItemKind::Type(..) => (E0325, "type"),
+            AssocItemKind::Trait(..) => (E0325, "trait"),
             AssocItemKind::Delegation(..) => (E0324, "method"),
             AssocItemKind::MacCall(..) | AssocItemKind::DelegationMac(..) => {
                 span_bug!(span, "unexpanded macro")

@@ -1,0 +1,16 @@
+error: expected `{}`, found `;`
+  --> $DIR/feature-gate-associated-traits.rs:8:14
+   |
+LL |     trait Bar;
+   |              ^
+   |
+   = help: try using `{}` instead
+
+error: associated traits are not yet fully implemented
+  --> $DIR/feature-gate-associated-traits.rs:8:5
+   |
+LL |     trait Bar;
+   |     ^^^^^^^^^^
+
+error: aborting due to 2 previous errors
+
