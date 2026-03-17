@@ -1307,21 +1307,16 @@ impl<'hir> LoweringContext<'_, 'hir> {
                 panic!("macros should have been expanded by now")
             }
             AssocItemKind::Trait(box AssocTraitItem { ident, .. }) => {
-                // Lower associated trait in impl as ImplItemKind::Type.
-                // The actual trait value resolution happens in the trait solver (Phase 3).
-                // For now, use a placeholder error type that won't emit a user-facing error.
-                let guar = self.dcx().span_delayed_bug(
-                    i.span,
-                    "associated trait impl items are not yet fully supported",
-                );
-                let err_ty = self.arena.alloc(self.ty(i.span, hir::TyKind::Err(guar)));
+                // Lower associated trait in impl as ImplItemKind::Type with a unit type
+                // placeholder. The actual trait value resolution happens in Phase 3.
+                let unit_ty = self.arena.alloc(self.ty(i.span, hir::TyKind::Tup(&[])));
                 (
                     *ident,
                     self.lower_generics(
                         &Generics::default(),
                         i.id,
                         ImplTraitContext::Disallowed(ImplTraitPosition::Generic),
-                        |_this| hir::ImplItemKind::Type(err_ty),
+                        |_this| hir::ImplItemKind::Type(unit_ty),
                     ),
                 )
             }

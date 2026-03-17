@@ -1150,19 +1150,39 @@ impl<'a> Parser<'a> {
 
             Ok(ItemKind::TraitAlias(Box::new(TraitAlias { constness, ident, generics, bounds })))
         } else {
-            // It's a normal trait.
-            generics.where_clause = self.parse_where_clause()?;
-            let items = self.parse_item_list(attrs, |p| p.parse_trait_item(ForceCollect::No))?;
-            Ok(ItemKind::Trait(Box::new(Trait {
-                constness,
-                is_auto,
-                safety,
-                impl_restriction,
-                ident,
-                generics,
-                bounds,
-                items,
-            })))
+            // It's a normal trait, unless we see a `;` (associated trait declaration).
+            if self.token == TokenKind::Semi {
+                // Associated trait declaration: `trait Bar;`
+                // (The `;` instead of `{` means this is a declaration, not a full trait.)
+                // We emit this as a Trait with empty items — the caller (parse_assoc_item)
+                // will convert it to AssocItemKind::Trait.
+                self.bump(); // eat the `;`
+                Ok(ItemKind::Trait(Box::new(Trait {
+                    constness,
+                    is_auto,
+                    safety,
+                    impl_restriction,
+                    ident,
+                    generics,
+                    bounds,
+                    items: ThinVec::new(),
+                })))
+            } else {
+                // It's a normal trait with a body.
+                generics.where_clause = self.parse_where_clause()?;
+                let items =
+                    self.parse_item_list(attrs, |p| p.parse_trait_item(ForceCollect::No))?;
+                Ok(ItemKind::Trait(Box::new(Trait {
+                    constness,
+                    is_auto,
+                    safety,
+                    impl_restriction,
+                    ident,
+                    generics,
+                    bounds,
+                    items,
+                })))
+            }
         }
     }
 
@@ -1237,6 +1257,9 @@ impl<'a> Parser<'a> {
                         }
                         ItemKind::TraitAlias(box TraitAlias { ident, bounds, .. }) => {
                             self.psess.gated_spans.gate(sym::associated_traits, span);
+                            // Remove the trait_alias gate that parse_item_trait added,
+                            // since this is an associated trait, not a standalone trait alias.
+                            self.psess.gated_spans.ungate_last(sym::trait_alias, span);
                             AssocItemKind::Trait(Box::new(AssocTraitItem {
                                 defaultness: Defaultness::Implicit,
                                 ident,

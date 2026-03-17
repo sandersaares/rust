@@ -500,6 +500,7 @@ pub fn check_crate(krate: &ast::Crate, sess: &Session, features: &Features) {
         "use the desugared name of the async trait, such as `AsyncFn`"
     );
     gate_all!(async_for_loop, "`for await` loops are experimental");
+    gate_all!(associated_traits, "associated traits are experimental");
     gate_all!(
         closure_lifetime_binder,
         "`for<...>` binders for closures are experimental",
