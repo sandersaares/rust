@@ -435,8 +435,17 @@ impl<'a, 'tcx> ObligationProcessor for FulfillProcessor<'a, 'tcx> {
                 ty::PredicateKind::Clause(ty::ClauseKind::UnstableFeature(_)) => {
                    unreachable!("unexpected higher ranked `UnstableFeature` goal")
                 }
-                ty::PredicateKind::Clause(ty::ClauseKind::AssocTraitBound(..)) => {
-                    ProcessResult::Unchanged
+                ty::PredicateKind::Clause(ty::ClauseKind::AssocTraitBound(pred)) => {
+                    // Higher-ranked associated trait bound. Leak universe and process.
+                    let pred = ty::Binder::dummy(
+                        infcx.enter_forall_and_leak_universe(binder.rebind(pred)),
+                    );
+                    let mut obligations = PredicateObligations::with_capacity(1);
+                    obligations.push(obligation.with(
+                        infcx.tcx,
+                        pred.map_bound(|p| ty::ClauseKind::AssocTraitBound(p)),
+                    ));
+                    ProcessResult::Changed(mk_pending(obligation, obligations))
                 }
             },
             Some(pred) => match pred {
@@ -812,8 +821,18 @@ impl<'a, 'tcx> ObligationProcessor for FulfillProcessor<'a, 'tcx> {
                         ProcessResult::Unchanged
                     }
                 }
-                ty::PredicateKind::Clause(ty::ClauseKind::AssocTraitBound(..)) => {
-                    ProcessResult::Unchanged
+                ty::PredicateKind::Clause(ty::ClauseKind::AssocTraitBound(pred)) => {
+                    // Associated trait bound: B: <C as Container>::Elem
+                    // For now, accept when types are concrete. Full resolution
+                    // (expanding to actual Trait predicates) requires a new query.
+                    if !pred.self_ty.has_non_region_infer()
+                        && !pred.projection.has_non_region_infer()
+                    {
+                        ProcessResult::Changed(Default::default())
+                    } else {
+                        pending_obligation.stalled_on.clear();
+                        ProcessResult::Unchanged
+                    }
                 }
             },
         }

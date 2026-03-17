@@ -410,14 +410,45 @@ impl<'tcx> dyn HirTyLowerer<'tcx> + '_ {
                 hir::GenericBound::Use(..) => {
                     // We don't actually lower `use` into the type layer.
                 }
-                hir::GenericBound::AssocTraitBound(_qself_ty, _segment, span) => {
+                hir::GenericBound::AssocTraitBound(qself_ty, segment, span) => {
                     // Associated trait bound: `B: C::Elem`
-                    // The QPath carries the base type (C) and segment (Elem).
-                    // Full predicate emission requires constructing an AliasTerm
-                    // for the projection and emitting an AssocTraitBound clause.
-                    // For now, emit a clear error message.
-                    self.dcx()
-                        .span_err(*span, "associated trait bounds are not yet fully supported");
+                    // Lower the base type (C), find the associated trait item (Elem),
+                    // and emit an AssocTraitBound predicate.
+                    let tcx = self.tcx();
+                    let base_ty = self.lower_ty(qself_ty);
+
+                    // Use the existing type-relative path resolution to find the
+                    // associated item DefId and the trait bound.
+                    let result = self.resolve_type_relative_path(
+                        base_ty,
+                        qself_ty,
+                        ty::AssocTag::Type, // Associated traits are registered as AssocTy
+                        segment,
+                        segment.hir_id,
+                        *span,
+                        None,
+                    );
+
+                    if let Ok((item_def_id, bound)) = result {
+                        // Build the AliasTerm: <C as Container>::Elem
+                        let alias_args = self.lower_generic_args_of_assoc_item(
+                            *span,
+                            item_def_id,
+                            segment,
+                            bound.skip_binder().args,
+                        );
+                        let alias_term = ty::AliasTerm::new_from_args(tcx, item_def_id, alias_args);
+
+                        // Emit the AssocTraitBound predicate
+                        let predicate = ty::Binder::bind_with_vars(
+                            ty::ClauseKind::AssocTraitBound(ty::AssocTraitBoundPredicate {
+                                self_ty: param_ty,
+                                projection: alias_term,
+                            }),
+                            bound_vars,
+                        );
+                        bounds.push((predicate.upcast(tcx), *span));
+                    }
                 }
             }
         }

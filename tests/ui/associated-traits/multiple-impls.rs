@@ -1,7 +1,9 @@
 // Test different impls providing different associated traits.
-//@ ignore-test: not yet implemented (associated_traits)
+//@ check-pass
+//@ compile-flags: --crate-type=lib
 
 #![feature(associated_traits)]
+#![allow(incomplete_features)]
 
 trait Constraint {
     trait Bound;
@@ -20,7 +22,7 @@ impl Constraint for TypeB {
 
 fn use_bound<T: Constraint, B: T::Bound>(_t: T, _b: B) {}
 
-fn main() {
+fn test() {
     // With TypeA, B must be Send
     use_bound(TypeA, 42i32);
     // With TypeB, B must be Clone

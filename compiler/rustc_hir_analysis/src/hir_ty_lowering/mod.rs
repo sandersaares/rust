@@ -899,19 +899,7 @@ impl<'tcx> dyn HirTyLowerer<'tcx> + '_ {
         // also include the bound vars of the overarching predicate if applicable.
         let _ = bound_generic_params;
 
-        let trait_def_id = match trait_ref.trait_def_id() {
-            Some(did) => did,
-            None => {
-                // This is an associated trait bound (B: C::Elem) where the trait ref
-                // has Res::Err because it's a type-relative path, not a resolved trait.
-                // Emit an error for now — full predicate emission requires more plumbing.
-                self.dcx().span_err(span, "associated trait bounds are not yet fully supported");
-                return GenericArgCountResult {
-                    explicit_late_bound: ExplicitLateBound::No,
-                    correct: Ok(()),
-                };
-            }
-        };
+        let trait_def_id = trait_ref.trait_def_id().unwrap_or_else(|| FatalError.raise());
 
         // Relaxed bounds `?Trait` and `PointeeSized` bounds aren't represented in the middle::ty IR
         // as they denote the *absence* of a default bound. However, we can't bail out early here since

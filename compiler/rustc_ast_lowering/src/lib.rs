@@ -1912,6 +1912,12 @@ impl<'a, 'hir> LoweringContext<'a, 'hir> {
                 let res = self.resolver.get_partial_res(p.trait_ref.ref_id);
                 if let Some(partial_res) = res
                     && partial_res.unresolved_segments() > 0
+                    && matches!(
+                        partial_res.base_res(),
+                        hir::def::Res::Def(hir::def::DefKind::TyParam, _)
+                            | hir::def::Res::SelfTyParam { .. }
+                            | hir::def::Res::SelfTyAlias { .. }
+                    )
                 {
                     // This is an associated trait bound like `B: C::Elem`.
                     // Lower the base type (C) and keep the segment (Elem).

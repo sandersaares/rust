@@ -1,7 +1,9 @@
 // Basic end-to-end usage: declare, implement, use as a bound.
-//@ ignore-test: not yet implemented (associated_traits)
+//@ check-pass
+//@ compile-flags: --crate-type=lib
 
 #![feature(associated_traits)]
+#![allow(incomplete_features)]
 
 trait Container {
     trait ElementConstraint;
@@ -15,7 +17,7 @@ impl Container for SyncContainer {
 
 fn process<C: Container, E: C::ElementConstraint>(_c: C, _e: E) {}
 
-fn main() {
+fn test() {
     let c = SyncContainer;
     let e: i32 = 42;
     process(c, e); // i32: Send, so this should work
