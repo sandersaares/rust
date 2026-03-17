@@ -4687,6 +4687,17 @@ impl<'a, 'ast, 'ra, 'tcx> LateResolutionVisitor<'a, 'ast, 'ra, 'tcx> {
                 partial_res
             }
 
+            // For associated traits: `B: T::Bar` where `Bar` is an associated trait.
+            // The path partially resolves (T resolves as a type param, Bar is unresolved).
+            // Accept this and defer to type checking, similar to type position paths.
+            Ok(Some(partial_res))
+                if matches!(source, PathSource::Trait(_))
+                    && partial_res.unresolved_segments() > 0
+                    && partial_res.base_res().opt_def_id().is_some() =>
+            {
+                partial_res
+            }
+
             Err(err) => {
                 if let Some(err) = report_errors_for_call(self, err) {
                     self.report_error(err.span, err.node);

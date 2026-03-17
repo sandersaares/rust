@@ -2123,6 +2123,19 @@ impl<'a, 'hir> LoweringContext<'a, 'hir> {
             Some(modifiers),
         ) {
             hir::QPath::Resolved(None, path) => path,
+            hir::QPath::TypeRelative(..) => {
+                // Associated trait bound: `B: C::Elem` where Elem is an associated trait.
+                // The resolver accepted this as a partially resolved path.
+                // For now, emit an error — full support requires emitting an
+                // AssocTraitBound predicate instead of a TraitPredicate.
+                self.dcx()
+                    .span_err(p.path.span, "associated trait bounds are not yet fully supported");
+                self.arena.alloc(hir::Path {
+                    span: self.lower_span(p.path.span),
+                    res: hir::def::Res::Err,
+                    segments: arena_vec![self;],
+                })
+            }
             qpath => panic!("lower_trait_ref: unexpected QPath `{qpath:?}`"),
         };
         hir::TraitRef { path, hir_ref_id: self.lower_node_id(p.ref_id) }
