@@ -437,6 +437,7 @@ symbols! {
         asserting,
         associated_const_equality,
         associated_consts,
+        associated_traits,
         associated_type_bounds,
         associated_type_defaults,
         associated_types,

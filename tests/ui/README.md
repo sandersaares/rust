@@ -86,6 +86,10 @@ See [RFC 0195 Associated items - Inherent associated items](https://github.com/r
 
 Tests for all kinds of associated items within traits and implementations. This directory serves as a catch-all for tests that don't fit the other more specific associated item directories.
 
+## `tests/ui/associated-traits`: Associated Traits
+
+Tests for the `associated_traits` feature, which allows traits to declare associated traits that implementors must specify. This enables generic constraints like `B: T::Bar` where `Bar` is an associated trait.
+
 ## `tests/ui/associated-type-bounds`: Associated Type Bounds
 
 These tests exercise associated type bounds, the feature that gives users a shorthand to express nested type bounds that would otherwise need to be expressed with nested `impl Trait` or broken into several `where` clauses.
