@@ -769,6 +769,9 @@ pub enum GenericBound<'hir> {
     Trait(PolyTraitRef<'hir>),
     Outlives(&'hir Lifetime),
     Use(&'hir [PreciseCapturingArg<'hir>], Span),
+    /// An associated trait bound: `B: C::Elem` where `Elem` is an associated trait.
+    /// Carries the type-relative QPath so HIR type lowering can emit the right predicate.
+    AssocTraitBound(&'hir Ty<'hir>, &'hir PathSegment<'hir>, Span),
 }
 
 impl GenericBound<'_> {
@@ -784,6 +787,7 @@ impl GenericBound<'_> {
             GenericBound::Trait(t, ..) => t.span,
             GenericBound::Outlives(l) => l.ident.span,
             GenericBound::Use(_, span) => *span,
+            GenericBound::AssocTraitBound(_, _, span) => *span,
         }
     }
 }

@@ -74,7 +74,7 @@ fn type_param_bounds<'tcx>(generics: &'tcx Generics<'tcx>) -> impl Iterator<Item
                             predicate_pos,
                             bound_pos,
                         }),
-                        GenericBound::Outlives(_) | GenericBound::Use(..) => None,
+                        GenericBound::Outlives(_) | GenericBound::Use(..) | GenericBound::AssocTraitBound(..) => None,
                     })
                     .filter(|bound| !bound.trait_bound.span.from_expansion()),
             )

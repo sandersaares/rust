@@ -2411,6 +2411,11 @@ impl<'a> State<'a> {
 
                     self.word(">");
                 }
+                GenericBound::AssocTraitBound(ty, segment, _) => {
+                    self.print_type(ty);
+                    self.word("::");
+                    self.print_ident(segment.ident);
+                }
             }
         }
     }

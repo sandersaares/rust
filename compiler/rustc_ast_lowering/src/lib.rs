@@ -1906,6 +1906,35 @@ impl<'a, 'hir> LoweringContext<'a, 'hir> {
     ) -> hir::GenericBound<'hir> {
         match tpb {
             GenericBound::Trait(p) => {
+                // Check if this is an associated trait bound (e.g., `C::Elem`)
+                // by looking at the resolution. If the path has unresolved segments
+                // and the base res is a type param, it's an associated trait bound.
+                let res = self.resolver.get_partial_res(p.trait_ref.ref_id);
+                if let Some(partial_res) = res
+                    && partial_res.unresolved_segments() > 0
+                {
+                    // This is an associated trait bound like `B: C::Elem`.
+                    // Lower the base type (C) and keep the segment (Elem).
+                    let base_path = &p.trait_ref.path;
+                    let resolved_segments =
+                        base_path.segments.len() - partial_res.unresolved_segments();
+                    if resolved_segments > 0 {
+                        // Lower the base type from the resolved segments
+                        let base_ty = self.lower_qpath(
+                            p.trait_ref.ref_id,
+                            &None,
+                            &p.trait_ref.path,
+                            ParamMode::Explicit,
+                            AllowReturnTypeNotation::No,
+                            itctx,
+                            None,
+                        );
+                        if let hir::QPath::TypeRelative(ty, segment) = base_ty {
+                            let span = self.lower_span(p.span);
+                            return hir::GenericBound::AssocTraitBound(ty, segment, span);
+                        }
+                    }
+                }
                 hir::GenericBound::Trait(self.lower_poly_trait_ref(p, rbp, itctx))
             }
             GenericBound::Outlives(lifetime) => hir::GenericBound::Outlives(self.lower_lifetime(

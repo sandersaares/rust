@@ -410,6 +410,15 @@ impl<'tcx> dyn HirTyLowerer<'tcx> + '_ {
                 hir::GenericBound::Use(..) => {
                     // We don't actually lower `use` into the type layer.
                 }
+                hir::GenericBound::AssocTraitBound(_qself_ty, _segment, span) => {
+                    // Associated trait bound: `B: C::Elem`
+                    // The QPath carries the base type (C) and segment (Elem).
+                    // Full predicate emission requires constructing an AliasTerm
+                    // for the projection and emitting an AssocTraitBound clause.
+                    // For now, emit a clear error message.
+                    self.dcx()
+                        .span_err(*span, "associated trait bounds are not yet fully supported");
+                }
             }
         }
     }

@@ -429,7 +429,9 @@ fn report_mismatched_rpitit_captures<'tcx>(
         tcx.hir_node_by_def_id(impl_opaque_def_id).expect_opaque_ty().bounds.iter().find_map(
             |bound| match *bound {
                 rustc_hir::GenericBound::Use(_, span) => Some(span),
-                hir::GenericBound::Trait(_) | hir::GenericBound::Outlives(_) => None,
+                hir::GenericBound::Trait(_)
+                | hir::GenericBound::Outlives(_)
+                | hir::GenericBound::AssocTraitBound(_, _, _) => None,
             },
         )
     else {

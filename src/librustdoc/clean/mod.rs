@@ -238,6 +238,8 @@ fn clean_generic_bound<'tcx>(
         hir::GenericBound::Use(args, ..) => {
             GenericBound::Use(args.iter().map(|arg| clean_precise_capturing_arg(arg, cx)).collect())
         }
+        // FIXME(associated_traits): Render associated trait bounds in docs.
+        hir::GenericBound::AssocTraitBound(..) => return None,
     })
 }
 
