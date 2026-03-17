@@ -53,6 +53,12 @@ pub enum ClauseKind<I: Interner> {
         #[type_visitable(ignore)]
         I::Symbol,
     ),
+
+    /// `where B: <C as Container>::Elem` — the type `B` must implement whatever
+    /// trait(s) the associated trait projection resolves to. The solver normalizes
+    /// the projection to find the impl's trait value, then replaces this with
+    /// concrete `Trait` predicates.
+    AssocTraitBound(ty::AssocTraitBoundPredicate<I>),
 }
 
 impl<I: Interner> Eq for ClauseKind<I> {}
@@ -147,6 +153,9 @@ impl<I: Interner> fmt::Debug for ClauseKind<I> {
             }
             ClauseKind::UnstableFeature(feature_name) => {
                 write!(f, "UnstableFeature({feature_name:?})")
+            }
+            ClauseKind::AssocTraitBound(data) => {
+                write!(f, "AssocTraitBound({:?}: {:?})", data.self_ty, data.projection)
             }
         }
     }

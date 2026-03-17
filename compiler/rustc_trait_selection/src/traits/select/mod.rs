@@ -971,6 +971,10 @@ impl<'cx, 'tcx> SelectionContext<'cx, 'tcx> {
                     bug!("AliasRelate is only used by the new solver")
                 }
                 ty::PredicateKind::Ambiguous => Ok(EvaluatedToAmbig),
+                ty::PredicateKind::Clause(ty::ClauseKind::AssocTraitBound(..)) => {
+                    Ok(EvaluatedToErr)
+                }
+
                 ty::PredicateKind::Clause(ty::ClauseKind::ConstArgHasType(ct, ty)) => {
                     let ct = self.infcx.shallow_resolve_const(ct);
                     let ct_ty = match ct.kind() {

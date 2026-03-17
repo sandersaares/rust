@@ -628,6 +628,14 @@ impl<'a, 'tcx> TypeErrCtxt<'a, 'tcx> {
                         self.report_host_effect_error(bound_predicate.rebind(predicate), &obligation, span)
                     }
 
+                    ty::PredicateKind::Clause(ty::ClauseKind::AssocTraitBound(..)) => {
+                        span_bug!(
+                            span,
+                            "associated trait bound should not error in old solver: `{:?}`",
+                            obligation
+                        )
+                    }
+
                     ty::PredicateKind::Subtype(predicate) => {
                         // Errors for Subtype predicates show up as
                         // `FulfillmentErrorCode::SubtypeError`,

@@ -239,6 +239,9 @@ impl<I: Interner, O: Elaboratable<I>> Elaborator<I, O> {
             ty::ClauseKind::UnstableFeature(_) => {
                 // Nothing to elaborate
             }
+            ty::ClauseKind::AssocTraitBound(_) => {
+                // Nothing to elaborate — resolved during trait solving
+            }
         }
     }
 }

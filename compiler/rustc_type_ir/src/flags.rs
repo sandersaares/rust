@@ -426,6 +426,12 @@ impl<I: Interner> FlagComputation<I> {
                 self.add_term(t2);
             }
             ty::PredicateKind::Clause(ty::ClauseKind::UnstableFeature(_sym)) => {}
+            ty::PredicateKind::Clause(ty::ClauseKind::AssocTraitBound(
+                ty::AssocTraitBoundPredicate { self_ty, projection },
+            )) => {
+                self.add_ty(self_ty);
+                self.add_alias_term(projection);
+            }
             ty::PredicateKind::Ambiguous => {}
         }
     }

@@ -759,6 +759,9 @@ impl<'tcx> Stable<'tcx> for ty::ClauseKind<'tcx> {
             ClauseKind::UnstableFeature(_) => {
                 todo!()
             }
+            ClauseKind::AssocTraitBound(..) => {
+                todo!("associated trait bounds not yet in stable API")
+            }
         }
     }
 }

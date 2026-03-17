@@ -586,6 +586,10 @@ where
             ty::PredicateKind::Clause(ty::ClauseKind::UnstableFeature(symbol)) => {
                 ecx.compute_unstable_feature_goal(param_env, symbol)
             }
+            ty::PredicateKind::Clause(ty::ClauseKind::AssocTraitBound(_predicate)) => {
+                // FIXME(associated_traits): implement associated trait bound resolution in new solver
+                ecx.evaluate_added_goals_and_make_canonical_response(Certainty::AMBIGUOUS)
+            }
             ty::PredicateKind::Subtype(predicate) => {
                 ecx.compute_subtype_goal(Goal { param_env, predicate })
             }

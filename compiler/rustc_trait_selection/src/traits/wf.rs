@@ -178,6 +178,10 @@ pub fn clause_obligations<'tcx>(
             // Technically the well-formedness of this predicate is implied by
             // the corresponding trait predicate it should've been generated beside.
         }
+        ty::ClauseKind::AssocTraitBound(..) => {
+            // Well-formedness of this predicate is implied by
+            // the corresponding trait predicate.
+        }
         ty::ClauseKind::RegionOutlives(..) => {}
         ty::ClauseKind::TypeOutlives(ty::OutlivesPredicate(ty, _reg)) => {
             wf.add_wf_preds_for_term(ty.into());
@@ -1208,7 +1212,8 @@ pub fn object_region_bounds<'tcx>(
                 | ty::ClauseKind::ConstArgHasType(_, _)
                 | ty::ClauseKind::WellFormed(_)
                 | ty::ClauseKind::UnstableFeature(_)
-                | ty::ClauseKind::ConstEvaluatable(_) => None,
+                | ty::ClauseKind::ConstEvaluatable(_)
+                | ty::ClauseKind::AssocTraitBound(..) => None,
             }
         })
         .collect()

@@ -155,6 +155,10 @@ where
             ty::ClauseKind::ConstEvaluatable(ct) => ct.visit_with(self),
             ty::ClauseKind::WellFormed(term) => term.visit_with(self),
             ty::ClauseKind::UnstableFeature(_) => V::Result::output(),
+            ty::ClauseKind::AssocTraitBound(pred) => {
+                try_visit!(pred.self_ty.visit_with(self));
+                self.visit_projection_term(pred.projection)
+            }
         }
     }
 

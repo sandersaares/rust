@@ -468,6 +468,7 @@ fn trait_specialization_kind<'tcx>(
         | ty::ClauseKind::WellFormed(_)
         | ty::ClauseKind::ConstEvaluatable(..)
         | ty::ClauseKind::UnstableFeature(_)
+        | ty::ClauseKind::AssocTraitBound(_)
         | ty::ClauseKind::HostEffect(..) => None,
     }
 }

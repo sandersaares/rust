@@ -3203,6 +3203,11 @@ define_print! {
             ty::ClauseKind::UnstableFeature(symbol) => {
                 write!(p, "feature({symbol}) is enabled")?;
             }
+            ty::ClauseKind::AssocTraitBound(ref pred) => {
+                pred.self_ty.print(p)?;
+                write!(p, ": ")?;
+                pred.projection.print(p)?;
+            }
         }
     }
 

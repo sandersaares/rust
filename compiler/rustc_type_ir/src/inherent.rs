@@ -486,6 +486,7 @@ pub trait Predicate<I: Interner<Predicate = Self>>:
             | PredicateKind::Clause(ClauseKind::Projection(_))
             | PredicateKind::Clause(ClauseKind::ConstArgHasType(..))
             | PredicateKind::Clause(ClauseKind::UnstableFeature(_))
+            | PredicateKind::Clause(ClauseKind::AssocTraitBound(_))
             | PredicateKind::DynCompatible(_)
             | PredicateKind::Subtype(_)
             | PredicateKind::Coerce(_)

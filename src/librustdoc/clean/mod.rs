@@ -407,7 +407,9 @@ pub(crate) fn clean_predicate<'tcx>(
         | ty::ClauseKind::ConstArgHasType(..)
         | ty::ClauseKind::UnstableFeature(..)
         // FIXME(const_trait_impl): We can probably use this `HostEffect` pred to render `~const`.
-        | ty::ClauseKind::HostEffect(_) => None,
+        | ty::ClauseKind::HostEffect(_)
+        // FIXME(associated_traits): Render associated trait bounds in docs.
+        | ty::ClauseKind::AssocTraitBound(..) => None,
     }
 }
 

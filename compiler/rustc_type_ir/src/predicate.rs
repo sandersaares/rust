@@ -925,6 +925,30 @@ impl<I: Interner> ty::Binder<I, HostEffectPredicate<I>> {
     }
 }
 
+/// Represents a bound like `B: <C as Container>::Elem` where `Elem` is an
+/// associated trait. The solver resolves the projection to find the concrete
+/// trait(s) from the impl and replaces this with regular `Trait` predicates.
+#[derive_where(Clone, Copy, Hash, PartialEq, Debug; I: Interner)]
+#[derive(TypeVisitable_Generic, GenericTypeVisitable, TypeFoldable_Generic, Lift_Generic)]
+#[cfg_attr(
+    feature = "nightly",
+    derive(Encodable_NoContext, Decodable_NoContext, HashStable_NoContext)
+)]
+pub struct AssocTraitBoundPredicate<I: Interner> {
+    /// The type that must implement the resolved trait (e.g., `B`).
+    pub self_ty: I::Ty,
+    /// The associated trait projection (e.g., `<C as Container>::Elem`).
+    pub projection: AliasTerm<I>,
+}
+
+impl<I: Interner> Eq for AssocTraitBoundPredicate<I> {}
+
+impl<I: Interner> AssocTraitBoundPredicate<I> {
+    pub fn with_replaced_self_ty(self, self_ty: I::Ty) -> Self {
+        Self { self_ty, ..self }
+    }
+}
+
 /// Encodes that `a` must be a subtype of `b`. The `a_is_expected` flag indicates
 /// whether the `a` type is the type that we should label as "expected" when
 /// presenting user diagnostics.

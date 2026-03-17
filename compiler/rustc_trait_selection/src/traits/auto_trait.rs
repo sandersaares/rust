@@ -806,7 +806,8 @@ impl<'tcx> AutoTraitFinder<'tcx> {
                 | ty::PredicateKind::Clause(ty::ClauseKind::ConstEvaluatable(..))
                 | ty::PredicateKind::Coerce(..)
                 | ty::PredicateKind::Clause(ty::ClauseKind::UnstableFeature(_))
-                | ty::PredicateKind::Clause(ty::ClauseKind::HostEffect(..)) => {}
+                | ty::PredicateKind::Clause(ty::ClauseKind::HostEffect(..))
+                | ty::PredicateKind::Clause(ty::ClauseKind::AssocTraitBound(..)) => {}
                 ty::PredicateKind::Ambiguous => return false,
             };
         }
