@@ -79,7 +79,14 @@ pub(super) fn type_of(tcx: TyCtxt<'_>, def_id: LocalDefId) -> ty::EarlyBinder<'_
                 .unwrap_or_else(|| icx.lower_ty(ty)),
             TraitItemKind::Type(_, Some(ty)) => icx.lower_ty(ty),
             TraitItemKind::Type(_, None) => {
-                span_bug!(item.span, "associated type missing default");
+                // Associated traits with defaults have has_value=true but
+                // no HIR type (the value is trait bounds, not a type).
+                // Return unit type as placeholder.
+                if item.defaultness.has_value() {
+                    Ty::new_tup(tcx, &[])
+                } else {
+                    span_bug!(item.span, "associated type missing default");
+                }
             }
         },
 

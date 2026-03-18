@@ -2482,6 +2482,12 @@ pub(super) fn check_type_bounds<'tcx>(
                 kind: hir::TraitItemKind::Type(_, Some(ty)),
                 ..
             }) => ty.span,
+            // Associated trait with a default value: the HIR doesn't have a concrete
+            // type (it's None), so use the def_span.
+            hir::Node::TraitItem(hir::TraitItem {
+                kind: hir::TraitItemKind::Type(_, None),
+                ..
+            }) => tcx.def_span(impl_ty_def_id),
             hir::Node::ImplItem(hir::ImplItem { kind: hir::ImplItemKind::Type(ty), .. }) => ty.span,
             item => span_bug!(
                 tcx.def_span(impl_ty_def_id),

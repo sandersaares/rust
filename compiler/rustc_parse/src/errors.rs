@@ -2402,13 +2402,6 @@ pub(crate) struct ExtraImplKeywordInTraitImpl {
 }
 
 #[derive(Diagnostic)]
-#[diag("bounds are not allowed on trait aliases")]
-pub(crate) struct BoundsNotAllowedOnTraitAliases {
-    #[primary_span]
-    pub span: Span,
-}
-
-#[derive(Diagnostic)]
 #[diag("trait aliases cannot be `auto`")]
 pub(crate) struct TraitAliasCannotBeAuto {
     #[primary_span]

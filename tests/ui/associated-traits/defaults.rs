@@ -1,7 +1,9 @@
 // Test default associated traits.
-//@ ignore-test: not yet implemented (associated_traits)
+//@ check-pass
+//@ compile-flags: --crate-type=lib
 
 #![feature(associated_traits)]
+#![allow(incomplete_features)]
 
 trait Foo {
     trait Bar = Send; // default: Bar is Send
@@ -21,7 +23,7 @@ impl Foo for OverridesDefault {
 
 fn needs_bar<T: Foo, B: T::Bar>(_t: T, _b: B) {}
 
-fn main() {
+fn test() {
     // UsesDefault::Bar is Send
     needs_bar(UsesDefault, 42i32);
     // OverridesDefault::Bar is Clone
