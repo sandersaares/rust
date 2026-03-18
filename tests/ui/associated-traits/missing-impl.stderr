@@ -1,0 +1,12 @@
+error[E0046]: not all trait items implemented, missing: `Bar`
+  --> $DIR/missing-impl.rs:13:1
+   |
+LL |     trait Bar;
+   |     ---------- `Bar` from trait
+...
+LL | impl Foo for MyStruct {
+   | ^^^^^^^^^^^^^^^^^^^^^ missing `Bar` in implementation
+
+error: aborting due to 1 previous error
+
+For more information about this error, try `rustc --explain E0046`.
