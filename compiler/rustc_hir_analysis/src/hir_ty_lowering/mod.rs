@@ -1412,6 +1412,19 @@ impl<'tcx> dyn HirTyLowerer<'tcx> + '_ {
             LowerTypeRelativePathMode::Type(permit_variants),
         )? {
             TypeRelativePath::AssocItem(def_id, args) => {
+                // Check if this is an associated trait — cannot be used as a type
+                if tcx.def_kind(def_id) == DefKind::AssocTrait {
+                    return Err(tcx.dcx().span_err(
+                        span,
+                        format!(
+                            "associated trait `{}` cannot be used as a type; \
+                             use it in a bound: `B: {}::{}` ",
+                            tcx.item_name(def_id),
+                            tcx.item_name(tcx.parent(def_id)),
+                            tcx.item_name(def_id),
+                        ),
+                    ));
+                }
                 let alias_ty = ty::AliasTy::new_from_args(tcx, def_id, args);
                 let ty = Ty::new_alias(tcx, alias_ty.kind(tcx), alias_ty);
                 let ty = self.check_param_uses_if_mcg(ty, span, false);

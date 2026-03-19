@@ -1,0 +1,8 @@
+error: associated trait `Bar` cannot be used as a type; use it in a bound: `B: Foo::Bar` 
+  --> $DIR/type-position-error.rs:12:13
+   |
+LL |     let _x: T::Bar = todo!();
+   |             ^^^^^^
+
+error: aborting due to 1 previous error
+

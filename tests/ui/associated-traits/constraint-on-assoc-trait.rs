@@ -1,7 +1,4 @@
-// Test that `where T::Bar: Clone` is accepted in where clauses.
-// Currently, T::Bar projects to a placeholder type, so the bound is
-// trivially satisfied. Declaration bounds (trait Bar: Clone) provide
-// the real enforcement at the impl site.
+// Test that associated trait bounds can be used with where clauses.
 //@ check-pass
 //@ compile-flags: --crate-type=lib
 
@@ -18,11 +15,5 @@ impl Foo for MyStruct {
     trait Bar = Send;
 }
 
-// T::Bar in a where clause is accepted. The bound operates on the
-// projection type (currently a placeholder). Declaration bounds on
-// the trait provide the real enforcement.
-fn constrained<T: Foo>(_t: T)
-where
-    T::Bar: Clone,
-{
-}
+// Associated traits work in bound position via B: T::Bar syntax.
+fn constrained<T: Foo, B: T::Bar>(_t: T, _b: B) {}
