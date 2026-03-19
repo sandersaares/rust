@@ -1306,8 +1306,11 @@ impl<'hir> LoweringContext<'_, 'hir> {
             AssocItemKind::MacCall(..) | AssocItemKind::DelegationMac(..) => {
                 panic!("macros should have been expanded by now")
             }
-            AssocItemKind::Trait(box AssocTraitItem { ident, .. }) => {
-                // Lower associated trait in impl as ImplItemKind::Type with unit placeholder.
+            AssocItemKind::Trait(box AssocTraitItem { ident, value, has_value, .. }) => {
+                // Lower associated trait in impl as ImplItemKind::Type.
+                // The value bounds (e.g., Send + Clone from `trait Bar = Send + Clone;`)
+                // are stored as where-clause predicates on the impl item's generics
+                // so that explicit_item_bounds can read them for solver enforcement.
                 let unit_ty = self.arena.alloc(self.ty(i.span, hir::TyKind::Tup(&[])));
                 (
                     *ident,
@@ -1315,7 +1318,56 @@ impl<'hir> LoweringContext<'_, 'hir> {
                         &Generics::default(),
                         i.id,
                         ImplTraitContext::Disallowed(ImplTraitPosition::Generic),
-                        |_this| hir::ImplItemKind::Type(unit_ty),
+                        |this| {
+                            if *has_value {
+                                // Lower each trait bound and add as a where predicate
+                                // on a unit-typed bounded_ty. This puts the bounds in
+                                // the HIR generics where explicit_item_bounds can find them.
+                                let hir_bounds: Vec<_> = value
+                                    .iter()
+                                    .filter_map(|bound| {
+                                        if let ast::GenericBound::Trait(ptr) = bound {
+                                            Some(hir::GenericBound::Trait(
+                                                this.lower_poly_trait_ref(
+                                                    ptr,
+                                                    RelaxedBoundPolicy::Forbidden(
+                                                        RelaxedBoundForbiddenReason::TraitObjectTy,
+                                                    ),
+                                                    ImplTraitContext::Disallowed(
+                                                        ImplTraitPosition::Generic,
+                                                    ),
+                                                ),
+                                            ))
+                                        } else {
+                                            None
+                                        }
+                                    })
+                                    .collect();
+
+                                if !hir_bounds.is_empty() {
+                                    let bounded_ty =
+                                        this.arena.alloc(this.ty(i.span, hir::TyKind::Tup(&[])));
+                                    let bounds = this.arena.alloc_from_iter(hir_bounds);
+                                    let hir_id = this.next_id();
+                                    let span = this.lower_span(i.span);
+                                    let kind =
+                                        this.arena.alloc(hir::WherePredicateKind::BoundPredicate(
+                                            hir::WhereBoundPredicate {
+                                                origin: PredicateOrigin::WhereClause,
+                                                bound_generic_params: &[],
+                                                bounded_ty,
+                                                bounds,
+                                            },
+                                        ));
+                                    this.impl_trait_bounds.push(hir::WherePredicate {
+                                        hir_id,
+                                        span,
+                                        kind,
+                                    });
+                                }
+                            }
+                            hir::ImplItemKind::Type(unit_ty)
+                        },
                     ),
                 )
             }

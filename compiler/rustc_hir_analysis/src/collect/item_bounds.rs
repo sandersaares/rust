@@ -480,6 +480,32 @@ pub(super) fn explicit_item_bounds_with_filter(
             }
         },
         hir::Node::Item(hir::Item { kind: hir::ItemKind::TyAlias(..), .. }) => &[],
+        // Associated trait impl items: the value bounds (e.g., `Send + Clone` from
+        // `trait Bar = Send + Clone;`) are stored as where-clause predicates on the
+        // impl item's generics during AST lowering.
+        hir::Node::ImplItem(hir::ImplItem {
+            kind: hir::ImplItemKind::Type(_),
+            generics,
+            span,
+            ..
+        }) if !generics.predicates.is_empty() => {
+            // Extract GenericBounds from the synthetic where-clause predicates.
+            let hir_bounds: Vec<_> = generics
+                .predicates
+                .iter()
+                .filter_map(|pred| {
+                    if let hir::WherePredicateKind::BoundPredicate(bp) = &pred.kind {
+                        Some(bp.bounds)
+                    } else {
+                        None
+                    }
+                })
+                .flatten()
+                .collect();
+            let hir_bounds = tcx.arena.alloc_from_iter(hir_bounds.into_iter().cloned());
+            associated_type_bounds(tcx, def_id, hir_bounds, *span, filter)
+        }
+        hir::Node::ImplItem(hir::ImplItem { kind: hir::ImplItemKind::Type(_), .. }) => &[],
         node => bug!("item_bounds called on {def_id:?} => {node:?}"),
     };
 
