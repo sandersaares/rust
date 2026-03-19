@@ -1,0 +1,13 @@
+error[E0428]: the name `Bar` is defined multiple times
+  --> $DIR/name-conflict.rs:10:5
+   |
+LL |     type Bar;
+   |     --------- previous definition of the type `Bar` here
+LL |     trait Bar;
+   |     ^^^^^^^^^^ `Bar` redefined here
+   |
+   = note: `Bar` must be defined only once in the type namespace of this trait
+
+error: aborting due to 1 previous error
+
+For more information about this error, try `rustc --explain E0428`.

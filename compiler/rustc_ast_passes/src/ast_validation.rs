@@ -1798,12 +1798,20 @@ impl<'a> Visitor<'a> for AstValidator<'a> {
                     self.check_type_no_bounds(bounds, "`impl`s");
                 }
                 AssocItemKind::Trait(box AssocTraitItem { has_value, .. }) => {
-                    if !has_value {
-                        // Associated trait in impl must specify a value: `trait Bar = Send;`
-                        self.dcx().emit_err(errors::AssocTypeWithoutBody {
-                            span: item.span,
-                            replace_span: self.ending_semi_or_hi(item.span),
-                        });
+                    if let AssocCtxt::Impl { of_trait } = ctxt {
+                        if !of_trait {
+                            // Associated traits are not allowed in inherent impls
+                            self.dcx().span_err(
+                                item.span,
+                                "associated traits are not allowed in inherent implementations",
+                            );
+                        } else if !has_value {
+                            // Associated trait in trait impl must specify a value
+                            self.dcx().emit_err(errors::AssocTypeWithoutBody {
+                                span: item.span,
+                                replace_span: self.ending_semi_or_hi(item.span),
+                            });
+                        }
                     }
                 }
                 _ => {}

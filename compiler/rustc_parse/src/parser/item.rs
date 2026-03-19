@@ -1289,7 +1289,14 @@ impl<'a> Parser<'a> {
                         // These are parsed as ItemKind::Trait (declaration) or
                         // ItemKind::TraitAlias (definition) by parse_item_trait,
                         // then intercepted here and converted to AssocItemKind::Trait.
-                        ItemKind::Trait(box Trait { ident, bounds, .. }) => {
+                        ItemKind::Trait(box Trait { ident, bounds, items, .. }) => {
+                            if !items.is_empty() {
+                                self.dcx().span_err(
+                                    span,
+                                    "associated traits cannot have a body; \
+                                     use `trait Bar;` or `trait Bar = Send;`",
+                                );
+                            }
                             self.psess.gated_spans.gate(sym::associated_traits, span);
                             AssocItemKind::Trait(Box::new(AssocTraitItem {
                                 defaultness: Defaultness::Implicit,
