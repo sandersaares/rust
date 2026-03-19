@@ -10,6 +10,7 @@ use rustc_infer::traits::{
     TraitEngine,
 };
 use rustc_middle::bug;
+use rustc_middle::traits::ImplSource;
 use rustc_middle::ty::abstract_const::NotConstEvaluatable;
 use rustc_middle::ty::error::{ExpectedFound, TypeError};
 use rustc_middle::ty::{
@@ -25,11 +26,12 @@ use super::project::{self, ProjectAndUnifyResult};
 use super::select::SelectionContext;
 use super::{
     EvaluationResult, FulfillmentError, FulfillmentErrorCode, PredicateObligation,
-    ScrubbedTraitError, const_evaluatable, wf,
+    ScrubbedTraitError, const_evaluatable, specialization_graph, wf,
 };
 use crate::error_reporting::InferCtxtErrorExt;
 use crate::infer::{InferCtxt, TyOrConstInferVar};
 use crate::solve::StalledOnCoroutines;
+use crate::traits;
 use crate::traits::normalize::normalize_with_depth_to;
 use crate::traits::project::{PolyProjectionObligation, ProjectionCacheKeyExt as _};
 use crate::traits::query::evaluate_obligation::InferCtxtExt;
@@ -823,38 +825,100 @@ impl<'a, 'tcx> ObligationProcessor for FulfillProcessor<'a, 'tcx> {
                 }
                 ty::PredicateKind::Clause(ty::ClauseKind::AssocTraitBound(pred)) => {
                     // Associated trait bound: B: <C as Container>::Elem
-                    // Resolve by looking up the impl's associated trait bounds
-                    // and emitting Trait obligations for each.
+                    // Resolve by finding the impl's associated trait value and
+                    // emitting Trait obligations for the self_ty.
                     if pred.self_ty.has_non_region_infer() || pred.projection.has_non_region_infer()
                     {
-                        // Types not yet concrete — stall
                         pending_obligation.stalled_on.clear();
                         ProcessResult::Unchanged
                     } else {
                         let tcx = self.selcx.tcx();
-                        // Get the explicit bounds on the associated item.
-                        // For `trait Bar: Clone` in the trait declaration, this returns
-                        // the bounds like [<Self>::Bar: Clone].
-                        // For the impl, after projection, this gives us the concrete bounds.
-                        let item_def_id = pred.projection.def_id;
-                        let item_bounds = tcx.explicit_item_bounds(item_def_id);
-                        let args = pred.projection.args;
+                        let trait_def_id = pred.projection.trait_def_id(tcx);
+                        let trait_ref = ty::TraitRef::new_from_args(
+                            tcx,
+                            trait_def_id,
+                            // Use the projection's args up to the trait's generics count
+                            tcx.mk_args(
+                                &pred.projection.args[..tcx.generics_of(trait_def_id).count()],
+                            ),
+                        );
 
-                        let mut new_obligations = PredicateObligations::new();
-                        for &(bound, _span) in item_bounds.skip_binder() {
-                            // Instantiate the bound with the projection's args
-                            let concrete_bound =
-                                ty::EarlyBinder::bind(bound).instantiate(tcx, args);
-                            new_obligations.push(obligation.with(tcx, concrete_bound));
+                        // Select the impl for the trait ref
+                        let trait_obligation = traits::Obligation::new(
+                            tcx,
+                            obligation.cause.clone(),
+                            obligation.param_env,
+                            trait_ref,
+                        );
+
+                        match self.selcx.select(&trait_obligation) {
+                            Ok(Some(ImplSource::UserDefined(impl_source))) => {
+                                let impl_def_id = impl_source.impl_def_id;
+                                let assoc_item_id = pred.projection.def_id;
+
+                                // Find the impl's associated item
+                                if let Ok(assoc_def) =
+                                    specialization_graph::assoc_def(tcx, impl_def_id, assoc_item_id)
+                                {
+                                    let impl_item_def_id = assoc_def.item.def_id;
+                                    // Get the value trait bounds from the impl item
+                                    let impl_bounds = tcx.explicit_item_bounds(impl_item_def_id);
+
+                                    let mut new_obligations = PredicateObligations::new();
+
+                                    // For each value trait bound, substitute self_ty for
+                                    // the projection type and emit as obligation
+                                    for &(bound, _span) in impl_bounds.skip_binder() {
+                                        if let Some(trait_pred) = bound.as_trait_clause() {
+                                            // Create: pred.self_ty: ValueTrait
+                                            let value_trait_ref =
+                                                trait_pred.skip_binder().trait_ref;
+                                            let new_trait_ref = ty::TraitRef::new(
+                                                tcx,
+                                                value_trait_ref.def_id,
+                                                [pred.self_ty],
+                                            );
+                                            new_obligations.push(obligation.with(
+                                                tcx,
+                                                ty::ClauseKind::Trait(ty::TraitPredicate {
+                                                    trait_ref: new_trait_ref,
+                                                    polarity: ty::PredicatePolarity::Positive,
+                                                }),
+                                            ));
+                                        }
+                                    }
+
+                                    // Also add declaration bounds from the trait item
+                                    let trait_bounds = tcx.explicit_item_bounds(assoc_item_id);
+                                    let args = pred.projection.args;
+                                    for &(bound, _span) in trait_bounds.skip_binder() {
+                                        let concrete =
+                                            ty::EarlyBinder::bind(bound).instantiate(tcx, args);
+                                        new_obligations.push(obligation.with(tcx, concrete));
+                                    }
+
+                                    ProcessResult::Changed(mk_pending(obligation, new_obligations))
+                                } else {
+                                    // Impl doesn't have the item — error
+                                    ProcessResult::Changed(Default::default())
+                                }
+                            }
+                            Ok(Some(_)) => {
+                                // Non-user-defined impl (builtin, etc.) — accept
+                                ProcessResult::Changed(Default::default())
+                            }
+                            Ok(None) => {
+                                // Ambiguous — stall
+                                pending_obligation.stalled_on.clear();
+                                ProcessResult::Unchanged
+                            }
+                            Err(_) => {
+                                // Selection error
+                                ProcessResult::Error(FulfillmentErrorCode::Select(
+                                    SelectionError::Unimplemented,
+                                ))
+                            }
                         }
-
-                        // Also check that pred.self_ty implements each trait
-                        // by adding Trait obligations.
-                        // The item_bounds check handles declaration bounds.
-                        // For the actual "B implements the resolved trait" check,
-                        // we accept it for now since the bounds are the main
-                        // enforcement mechanism.
-                        ProcessResult::Changed(mk_pending(obligation, new_obligations))
                     }
                 }
             },

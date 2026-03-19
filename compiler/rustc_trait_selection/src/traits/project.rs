@@ -2045,7 +2045,10 @@ fn confirm_impl_candidate<'cx, 'tcx>(
 
     let term = if obligation.predicate.kind(tcx).is_type() {
         // Associated traits don't have types — return unit type placeholder
-        // so projection normalization doesn't panic.
+        // Associated traits don't have types. Return () as a projection
+        // placeholder — this path is hit during trait selection but the result
+        // is not used for type checking (associated trait bounds are handled
+        // through AssocTraitBound predicates instead).
         if tcx.def_kind(assoc_term.item.def_id) == DefKind::AssocTrait {
             ty::EarlyBinder::bind(Ty::new_tup(tcx, &[]).into())
         } else {
