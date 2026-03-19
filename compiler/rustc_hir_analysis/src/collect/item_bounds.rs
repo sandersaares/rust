@@ -482,28 +482,38 @@ pub(super) fn explicit_item_bounds_with_filter(
         hir::Node::Item(hir::Item { kind: hir::ItemKind::TyAlias(..), .. }) => &[],
         // Associated trait impl items: the value bounds (e.g., `Send + Clone` from
         // `trait Bar = Send + Clone;`) are stored as where-clause predicates on the
-        // impl item's generics during AST lowering.
+        // impl item's generics during AST lowering. Detect by checking that the
+        // impl type is () (our placeholder) and there are synthetic predicates.
         hir::Node::ImplItem(hir::ImplItem {
-            kind: hir::ImplItemKind::Type(_),
+            kind: hir::ImplItemKind::Type(ty),
             generics,
             span,
             ..
-        }) if !generics.predicates.is_empty() => {
-            // Extract GenericBounds from the synthetic where-clause predicates.
-            let hir_bounds: Vec<_> = generics
-                .predicates
-                .iter()
-                .filter_map(|pred| {
-                    if let hir::WherePredicateKind::BoundPredicate(bp) = &pred.kind {
-                        Some(bp.bounds)
-                    } else {
-                        None
-                    }
-                })
-                .flatten()
-                .collect();
-            let hir_bounds = tcx.arena.alloc_from_iter(hir_bounds.into_iter().cloned());
-            associated_type_bounds(tcx, def_id, hir_bounds, *span, filter)
+        }) if !generics.predicates.is_empty() && matches!(ty.kind, hir::TyKind::Tup(&[])) => {
+            // Extract GenericBounds from the synthetic where-clause predicates
+            // and lower them as item bounds on the projection type.
+            let item_ty = Ty::new_projection_from_args(
+                tcx,
+                def_id.to_def_id(),
+                GenericArgs::identity_for_item(tcx, def_id),
+            );
+            let icx = ItemCtxt::new(tcx, def_id);
+            let mut bounds = Vec::new();
+
+            for pred in generics.predicates {
+                if let hir::WherePredicateKind::BoundPredicate(bp) = &pred.kind {
+                    icx.lowerer().lower_bounds(
+                        item_ty,
+                        bp.bounds,
+                        &mut bounds,
+                        ty::List::empty(),
+                        filter,
+                        OverlappingAsssocItemConstraints::Allowed,
+                    );
+                }
+            }
+
+            tcx.arena.alloc_from_iter(bounds)
         }
         hir::Node::ImplItem(hir::ImplItem { kind: hir::ImplItemKind::Type(_), .. }) => &[],
         node => bug!("item_bounds called on {def_id:?} => {node:?}"),
