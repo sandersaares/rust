@@ -1,0 +1,20 @@
+error: associated trait `Bar` cannot be used as a type; use it in a bound: `B: Foo::Bar` 
+  --> $DIR/type-position-various.rs:11:32
+   |
+LL | fn as_return_type<T: Foo>() -> T::Bar {
+   |                                ^^^^^^
+
+error: associated trait `Bar` cannot be used as a type; use it in a bound: `B: Foo::Bar` 
+  --> $DIR/type-position-various.rs:16:29
+   |
+LL | fn as_parameter<T: Foo>(_x: T::Bar) {
+   |                             ^^^^^^
+
+error: associated trait `Bar` cannot be used as a type; use it in a bound: `B: Foo::Bar` 
+  --> $DIR/type-position-various.rs:21:12
+   |
+LL |     field: T::Bar,
+   |            ^^^^^^
+
+error: aborting due to 3 previous errors
+
