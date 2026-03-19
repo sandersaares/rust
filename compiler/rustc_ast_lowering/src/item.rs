@@ -1089,10 +1089,17 @@ impl<'hir> LoweringContext<'_, 'hir> {
             AssocItemKind::MacCall(..) | AssocItemKind::DelegationMac(..) => {
                 panic!("macros should have been expanded by now")
             }
-            AssocItemKind::Trait(box AssocTraitItem { ident, bounds, has_value, .. }) => {
+            AssocItemKind::Trait(box AssocTraitItem {
+                ident,
+                generics: ast_generics,
+                bounds,
+                has_value,
+                ..
+            }) => {
                 // Lower associated trait as TraitItemKind::Trait in the HIR.
+                // Pass actual generics (e.g., <T: Send>) instead of empty.
                 let (generics, kind) = self.lower_generics(
-                    &Generics::default(),
+                    ast_generics,
                     i.id,
                     ImplTraitContext::Disallowed(ImplTraitPosition::Generic),
                     |this| {
@@ -1301,13 +1308,18 @@ impl<'hir> LoweringContext<'_, 'hir> {
             AssocItemKind::MacCall(..) | AssocItemKind::DelegationMac(..) => {
                 panic!("macros should have been expanded by now")
             }
-            AssocItemKind::Trait(box AssocTraitItem { ident, value, has_value, .. }) => {
-                // Lower associated trait in impl as ImplItemKind::Trait with the
-                // value trait bounds stored directly on the HIR node.
+            AssocItemKind::Trait(box AssocTraitItem {
+                ident,
+                generics: ast_generics,
+                value,
+                has_value,
+                ..
+            }) => {
+                // Lower associated trait in impl as ImplItemKind::Trait.
                 (
                     *ident,
                     self.lower_generics(
-                        &Generics::default(),
+                        ast_generics,
                         i.id,
                         ImplTraitContext::Disallowed(ImplTraitPosition::Generic),
                         |this| {

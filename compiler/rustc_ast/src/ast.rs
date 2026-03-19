@@ -3808,6 +3808,8 @@ pub struct TyAlias {
 pub struct AssocTraitItem {
     pub defaultness: Defaultness,
     pub ident: Ident,
+    /// Generic parameters (e.g., `<T: Send>` in `trait Elem<T: Send>;`).
+    pub generics: Generics,
     /// Bounds on the associated trait declaration (e.g., `trait Bar: Clone;`).
     #[visitable(extra = BoundKind::Bound)]
     pub bounds: GenericBounds,

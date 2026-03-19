@@ -625,12 +625,14 @@ impl<'a> State<'a> {
             ast::AssocItemKind::Trait(box ast::AssocTraitItem {
                 defaultness: _,
                 ident,
+                generics,
                 bounds,
                 value,
                 has_value,
             }) => {
                 self.word_space("trait");
                 self.print_ident(*ident);
+                self.print_generic_params(&generics.params);
                 if !bounds.is_empty() {
                     self.word_nbsp(":");
                     self.print_type_bounds(bounds);
@@ -640,6 +642,7 @@ impl<'a> State<'a> {
                     self.word_space("=");
                     self.print_type_bounds(value);
                 }
+                self.print_where_clause(&generics.where_clause);
                 self.word(";");
             }
             ast::AssocItemKind::MacCall(m) => {
