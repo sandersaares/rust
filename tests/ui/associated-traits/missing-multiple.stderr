@@ -1,0 +1,14 @@
+error[E0046]: not all trait items implemented, missing: `Bar`, `Baz`
+  --> $DIR/missing-multiple.rs:14:1
+   |
+LL |     trait Bar;
+   |     ---------- `Bar` from trait
+LL |     trait Baz;
+   |     ---------- `Baz` from trait
+...
+LL | impl Foo for S {
+   | ^^^^^^^^^^^^^^ missing `Bar`, `Baz` in implementation
+
+error: aborting due to 1 previous error
+
+For more information about this error, try `rustc --explain E0046`.
