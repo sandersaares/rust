@@ -3342,9 +3342,10 @@ impl<'a, 'ast, 'ra, 'tcx> LateResolutionVisitor<'a, 'ast, 'ra, 'tcx> {
                     .with_lifetime_rib(LifetimeRibKind::AnonymousReportError, |this| {
                         walk_assoc_item(this, generics, LifetimeBinderKind::Item, item)
                     }),
-                AssocItemKind::Trait(..) => {
-                    visit::walk_assoc_item(self, item, AssocCtxt::Trait);
-                }
+                AssocItemKind::Trait(box ast::AssocTraitItem { generics, .. }) => self
+                    .with_lifetime_rib(LifetimeRibKind::AnonymousReportError, |this| {
+                        walk_assoc_item(this, generics, LifetimeBinderKind::Item, item)
+                    }),
                 AssocItemKind::MacCall(_) | AssocItemKind::DelegationMac(..) => {
                     panic!("unexpanded macro in resolve!")
                 }
@@ -3631,21 +3632,30 @@ impl<'a, 'ast, 'ra, 'tcx> LateResolutionVisitor<'a, 'ast, 'ra, 'tcx> {
                 );
                 self.diag_metadata.in_non_gat_assoc_type = None;
             }
-            AssocItemKind::Trait(box ast::AssocTraitItem { ident, .. }) => {
+            AssocItemKind::Trait(box ast::AssocTraitItem { ident, generics, .. }) => {
                 debug!("resolve_implementation AssocItemKind::Trait");
-                self.with_lifetime_rib(LifetimeRibKind::AnonymousReportError, |this| {
-                    this.check_trait_item(
-                        item.id,
-                        *ident,
-                        &item.kind,
-                        TypeNS,
-                        item.span,
-                        seen_trait_items,
-                        |i, s, c| TypeNotMemberOfTrait(i, s, c),
-                    );
+                self.with_generic_param_rib(
+                    &generics.params,
+                    RibKind::AssocItem,
+                    item.id,
+                    LifetimeBinderKind::ImplAssocType,
+                    generics.span,
+                    |this| {
+                        this.with_lifetime_rib(LifetimeRibKind::AnonymousReportError, |this| {
+                            this.check_trait_item(
+                                item.id,
+                                *ident,
+                                &item.kind,
+                                TypeNS,
+                                item.span,
+                                seen_trait_items,
+                                |i, s, c| TypeNotMemberOfTrait(i, s, c),
+                            );
 
-                    visit::walk_assoc_item(this, item, AssocCtxt::Impl { of_trait: true });
-                });
+                            visit::walk_assoc_item(this, item, AssocCtxt::Impl { of_trait: true })
+                        });
+                    },
+                );
             }
             AssocItemKind::Delegation(box delegation) => {
                 debug!("resolve_implementation AssocItemKind::Delegation");
