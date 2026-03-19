@@ -1307,8 +1307,7 @@ impl<'hir> LoweringContext<'_, 'hir> {
                 panic!("macros should have been expanded by now")
             }
             AssocItemKind::Trait(box AssocTraitItem { ident, .. }) => {
-                // Lower associated trait in impl as ImplItemKind::Type with a unit type
-                // placeholder. The actual trait value resolution happens in Phase 3.
+                // Lower associated trait in impl as ImplItemKind::Type with unit placeholder.
                 let unit_ty = self.arena.alloc(self.ty(i.span, hir::TyKind::Tup(&[])));
                 (
                     *ident,
