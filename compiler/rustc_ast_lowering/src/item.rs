@@ -1091,6 +1091,7 @@ impl<'hir> LoweringContext<'_, 'hir> {
             }
             AssocItemKind::Trait(box AssocTraitItem { ident, bounds, has_value, .. }) => {
                 // Lower associated trait as TraitItemKind::Type in the HIR.
+                // The DefKind::AssocTrait distinguishes this from associated types.
                 let (generics, kind) = self.lower_generics(
                     &Generics::default(),
                     i.id,
@@ -1101,27 +1102,6 @@ impl<'hir> LoweringContext<'_, 'hir> {
                             RelaxedBoundPolicy::Allowed,
                             ImplTraitContext::Disallowed(ImplTraitPosition::Generic),
                         );
-
-                        // Add a synthetic marker predicate to distinguish associated
-                        // traits from associated types at the HIR level. We use a
-                        // unit-typed predicate with no bounds as the marker.
-                        let marker_ty = this.arena.alloc(this.ty(i.span, hir::TyKind::Tup(&[])));
-                        let marker_hir_id = this.next_id();
-                        let marker_span = this.lower_span(i.span);
-                        let marker_kind = this.arena.alloc(
-                            hir::WherePredicateKind::BoundPredicate(hir::WhereBoundPredicate {
-                                origin: PredicateOrigin::WhereClause,
-                                bound_generic_params: &[],
-                                bounded_ty: marker_ty,
-                                bounds: &[],
-                            }),
-                        );
-                        this.impl_trait_bounds.push(hir::WherePredicate {
-                            hir_id: marker_hir_id,
-                            span: marker_span,
-                            kind: marker_kind,
-                        });
-
                         hir::TraitItemKind::Type(hir_bounds, None)
                     },
                 );

@@ -900,6 +900,7 @@ fn should_encode_span(def_kind: DefKind) -> bool {
         | DefKind::ForeignTy
         | DefKind::TraitAlias
         | DefKind::AssocTy
+        | DefKind::AssocTrait
         | DefKind::TyParam
         | DefKind::ConstParam
         | DefKind::LifetimeParam
@@ -935,6 +936,7 @@ fn should_encode_attrs(def_kind: DefKind) -> bool {
         | DefKind::ForeignTy
         | DefKind::TraitAlias
         | DefKind::AssocTy
+        | DefKind::AssocTrait
         | DefKind::Fn
         | DefKind::Const { .. }
         | DefKind::Static { nested: false, .. }
@@ -977,6 +979,7 @@ fn should_encode_expn_that_defined(def_kind: DefKind) -> bool {
         | DefKind::ForeignTy
         | DefKind::TraitAlias
         | DefKind::AssocTy
+        | DefKind::AssocTrait
         | DefKind::TyParam
         | DefKind::Fn
         | DefKind::Const { .. }
@@ -1012,6 +1015,7 @@ fn should_encode_visibility(def_kind: DefKind) -> bool {
         | DefKind::ForeignTy
         | DefKind::TraitAlias
         | DefKind::AssocTy
+        | DefKind::AssocTrait
         | DefKind::Fn
         | DefKind::Const { .. }
         | DefKind::Static { nested: false, .. }
@@ -1045,6 +1049,7 @@ fn should_encode_stability(def_kind: DefKind) -> bool {
         | DefKind::Field
         | DefKind::Struct
         | DefKind::AssocTy
+        | DefKind::AssocTrait
         | DefKind::AssocFn
         | DefKind::AssocConst { .. }
         | DefKind::TyParam
@@ -1134,7 +1139,7 @@ fn should_encode_variances<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, def_kind: Def
         | DefKind::Fn
         | DefKind::Ctor(..)
         | DefKind::AssocFn => true,
-        DefKind::AssocTy => {
+        DefKind::AssocTy | DefKind::AssocTrait => {
             // Only encode variances for RPITITs (for traits)
             matches!(tcx.opt_rpitit_info(def_id), Some(ty::ImplTraitInTraitData::Trait { .. }))
         }
@@ -1175,6 +1180,7 @@ fn should_encode_generics(def_kind: DefKind) -> bool {
         | DefKind::ForeignTy
         | DefKind::TraitAlias
         | DefKind::AssocTy
+        | DefKind::AssocTrait
         | DefKind::Fn
         | DefKind::Const { .. }
         | DefKind::Static { .. }
@@ -1235,7 +1241,7 @@ fn should_encode_type(tcx: TyCtxt<'_>, def_id: LocalDefId, def_kind: DefKind) ->
             }
         }
 
-        DefKind::AssocTy => {
+        DefKind::AssocTy | DefKind::AssocTrait => {
             let assoc_item = tcx.associated_item(def_id);
             match assoc_item.container {
                 ty::AssocContainer::InherentImpl | ty::AssocContainer::TraitImpl(_) => true,
@@ -1283,6 +1289,7 @@ fn should_encode_fn_sig(def_kind: DefKind) -> bool {
         | DefKind::AnonConst
         | DefKind::InlineConst
         | DefKind::AssocTy
+        | DefKind::AssocTrait
         | DefKind::TyParam
         | DefKind::Trait
         | DefKind::TraitAlias
@@ -1320,6 +1327,7 @@ fn should_encode_constness(def_kind: DefKind) -> bool {
         | DefKind::ConstParam
         | DefKind::InlineConst
         | DefKind::AssocTy
+        | DefKind::AssocTrait
         | DefKind::TyParam
         | DefKind::Trait
         | DefKind::TraitAlias
@@ -1360,6 +1368,7 @@ fn should_encode_const(def_kind: DefKind) -> bool {
         | DefKind::Closure
         | DefKind::ConstParam
         | DefKind::AssocTy
+        | DefKind::AssocTrait
         | DefKind::TyParam
         | DefKind::Trait
         | DefKind::TraitAlias

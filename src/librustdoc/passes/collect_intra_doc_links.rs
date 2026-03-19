@@ -397,6 +397,7 @@ impl<'tcx> LinkCollector<'_, 'tcx> {
                     DefKind::AssocFn
                     | DefKind::AssocConst { .. }
                     | DefKind::AssocTy
+                    | DefKind::AssocTrait
                     | DefKind::Variant,
                     def_id,
                 ) => {
@@ -496,6 +497,7 @@ fn resolve_self_ty<'tcx>(
         def_kind @ (DefKind::AssocFn
         | DefKind::AssocConst { .. }
         | DefKind::AssocTy
+        | DefKind::AssocTrait
         | DefKind::Variant
         | DefKind::Field) => {
             let parent_def_id = tcx.parent(item_id);
@@ -1214,7 +1216,11 @@ impl LinkCollector<'_, '_> {
         let tcx = self.cx.tcx;
         let def_kind = tcx.def_kind(original_did);
         let did = match def_kind {
-            DefKind::AssocTy | DefKind::AssocFn | DefKind::AssocConst { .. } | DefKind::Variant => {
+            DefKind::AssocTy
+            | DefKind::AssocTrait
+            | DefKind::AssocFn
+            | DefKind::AssocConst { .. }
+            | DefKind::Variant => {
                 // documented on their parent's page
                 tcx.parent(original_did)
             }
@@ -2141,6 +2147,7 @@ fn resolution_failure(
                             | Field
                             | Closure
                             | AssocTy
+                            | AssocTrait
                             | AssocConst { .. }
                             | AssocFn
                             | Fn

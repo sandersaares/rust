@@ -204,6 +204,7 @@ impl AssocKind {
                 DefKind::AssocConst { is_type_const: *is_type_const }
             }
             Self::Fn { .. } => DefKind::AssocFn,
+            Self::Type { data: AssocTypeData::Trait(_) } => DefKind::AssocTrait,
             Self::Type { .. } => DefKind::AssocTy,
         }
     }

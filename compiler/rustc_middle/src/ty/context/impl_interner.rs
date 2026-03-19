@@ -190,7 +190,7 @@ impl<'tcx> Interner for TyCtxt<'tcx> {
 
     fn alias_ty_kind(self, alias: ty::AliasTy<'tcx>) -> ty::AliasTyKind {
         match self.def_kind(alias.def_id) {
-            DefKind::AssocTy => {
+            DefKind::AssocTy | DefKind::AssocTrait => {
                 if let DefKind::Impl { of_trait: false } = self.def_kind(self.parent(alias.def_id))
                 {
                     ty::Inherent
@@ -206,7 +206,7 @@ impl<'tcx> Interner for TyCtxt<'tcx> {
 
     fn alias_term_kind(self, alias: ty::AliasTerm<'tcx>) -> ty::AliasTermKind {
         match self.def_kind(alias.def_id) {
-            DefKind::AssocTy => {
+            DefKind::AssocTy | DefKind::AssocTrait => {
                 if let DefKind::Impl { of_trait: false } = self.def_kind(self.parent(alias.def_id))
                 {
                     ty::AliasTermKind::InherentTy

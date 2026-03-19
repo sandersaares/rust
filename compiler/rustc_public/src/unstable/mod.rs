@@ -105,6 +105,7 @@ pub(crate) fn new_item_kind(kind: DefKind) -> ItemKind {
         | DefKind::ForeignTy
         | DefKind::TraitAlias
         | DefKind::AssocTy
+        | DefKind::AssocTrait
         | DefKind::TyParam
         | DefKind::ConstParam
         | DefKind::Macro(_)

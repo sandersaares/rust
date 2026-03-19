@@ -108,7 +108,7 @@ fn is_not_const(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
         | DefKind::TyAlias
         | DefKind::ForeignTy
         | DefKind::TraitAlias
-        | DefKind::AssocTy
+        | DefKind::AssocTy | DefKind::AssocTrait
         | DefKind::Macro(..)
         | DefKind::Field
         | DefKind::LifetimeParam

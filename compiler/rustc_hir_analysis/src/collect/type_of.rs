@@ -79,16 +79,10 @@ pub(super) fn type_of(tcx: TyCtxt<'_>, def_id: LocalDefId) -> ty::EarlyBinder<'_
                 .unwrap_or_else(|| icx.lower_ty(ty)),
             TraitItemKind::Type(_, Some(ty)) => icx.lower_ty(ty),
             TraitItemKind::Type(_, None) => {
-                // Associated traits (with or without defaults) have no HIR type.
-                // Check for the marker predicate that identifies associated traits.
-                let is_assoc_trait = item.generics.predicates.iter().any(|pred| {
-                    if let hir::WherePredicateKind::BoundPredicate(bp) = &pred.kind {
-                        matches!(bp.bounded_ty.kind, hir::TyKind::Tup(&[])) && bp.bounds.is_empty()
-                    } else {
-                        false
-                    }
-                });
-                if is_assoc_trait || item.defaultness.has_value() {
+                if tcx.def_kind(def_id) == hir::def::DefKind::AssocTrait
+                    || item.defaultness.has_value()
+                {
+                    // Associated traits return () as placeholder.
                     Ty::new_tup(tcx, &[])
                 } else {
                     span_bug!(item.span, "associated type missing default");

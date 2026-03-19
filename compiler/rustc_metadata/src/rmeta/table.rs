@@ -173,6 +173,7 @@ fixed_size_enum! {
         ( ForeignTy                                )
         ( TraitAlias                               )
         ( AssocTy                                  )
+        ( AssocTrait                               )
         ( TyParam                                  )
         ( Fn                                       )
         ( Const { is_type_const: true}             )

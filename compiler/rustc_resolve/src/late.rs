@@ -3759,7 +3759,7 @@ impl<'a, 'ast, 'ra, 'tcx> LateResolutionVisitor<'a, 'ast, 'ra, 'tcx> {
 
         match (def_kind, kind) {
             (DefKind::AssocTy, AssocItemKind::Type(..))
-            | (DefKind::AssocTy, AssocItemKind::Trait(..))
+            | (DefKind::AssocTrait, AssocItemKind::Trait(..))
             | (DefKind::AssocFn, AssocItemKind::Fn(..))
             | (DefKind::AssocConst { .. }, AssocItemKind::Const(..))
             | (DefKind::AssocFn, AssocItemKind::Delegation(..)) => {

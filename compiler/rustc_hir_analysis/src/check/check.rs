@@ -1093,7 +1093,7 @@ pub(crate) fn check_item_type(tcx: TyCtxt<'_>, def_id: LocalDefId) -> Result<(),
             // avoids this query from having a direct dependency edge on the HIR
             return res;
         }
-        DefKind::AssocTy => {
+        DefKind::AssocTy | DefKind::AssocTrait => {
             tcx.ensure_ok().predicates_of(def_id);
             res = res.and(check_associated_item(tcx, def_id));
 

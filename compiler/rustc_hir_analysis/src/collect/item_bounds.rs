@@ -480,16 +480,13 @@ pub(super) fn explicit_item_bounds_with_filter(
             }
         },
         hir::Node::Item(hir::Item { kind: hir::ItemKind::TyAlias(..), .. }) => &[],
-        // Associated trait impl items: the value bounds (e.g., `Send + Clone` from
-        // `trait Bar = Send + Clone;`) are stored as where-clause predicates on the
-        // impl item's generics during AST lowering. Detect by checking that the
-        // impl type is () (our placeholder) and there are synthetic predicates.
+        // Associated trait impl items: the value bounds are stored as where-clause
+        // predicates on the impl item's generics during AST lowering.
         hir::Node::ImplItem(hir::ImplItem {
-            kind: hir::ImplItemKind::Type(ty),
-            generics,
-            span,
-            ..
-        }) if !generics.predicates.is_empty() && matches!(ty.kind, hir::TyKind::Tup(&[])) => {
+            kind: hir::ImplItemKind::Type(_), generics, ..
+        }) if tcx.def_kind(def_id) == hir::def::DefKind::AssocTrait
+            && !generics.predicates.is_empty() =>
+        {
             // Extract GenericBounds from the synthetic where-clause predicates
             // and lower them as item bounds on the projection type.
             let item_ty = Ty::new_projection_from_args(

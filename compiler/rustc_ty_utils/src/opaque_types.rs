@@ -40,9 +40,10 @@ enum CollectionMode {
 impl<'tcx> OpaqueTypeCollector<'tcx> {
     fn new(tcx: TyCtxt<'tcx>, item: LocalDefId) -> Self {
         let mode = match tcx.def_kind(item) {
-            DefKind::AssocConst { .. } | DefKind::AssocFn | DefKind::AssocTy => {
-                CollectionMode::ImplTraitInAssocTypes
-            }
+            DefKind::AssocConst { .. }
+            | DefKind::AssocFn
+            | DefKind::AssocTy
+            | DefKind::AssocTrait => CollectionMode::ImplTraitInAssocTypes,
             DefKind::TyAlias => CollectionMode::Taits,
             _ => CollectionMode::RpitAndAsyncFnOnly,
         };
@@ -314,7 +315,7 @@ fn opaque_types_defined_by<'tcx>(
         DefKind::Closure | DefKind::InlineConst | DefKind::SyntheticCoroutineBody => {
             collector.opaques.extend(tcx.opaque_types_defined_by(tcx.local_parent(item)));
         }
-        DefKind::AssocTy | DefKind::TyAlias | DefKind::GlobalAsm => {}
+        DefKind::AssocTy | DefKind::AssocTrait | DefKind::TyAlias | DefKind::GlobalAsm => {}
         DefKind::OpaqueTy
         | DefKind::Mod
         | DefKind::Struct

@@ -170,7 +170,7 @@ impl ItemType {
             DefKind::ForeignTy => Self::ForeignType,
             DefKind::Variant => Self::Variant,
             DefKind::Field => Self::StructField,
-            DefKind::AssocTy => Self::AssocType,
+            DefKind::AssocTy | DefKind::AssocTrait => Self::AssocType,
             DefKind::AssocFn => {
                 if tcx.associated_item(def_id).defaultness(tcx).has_value() {
                     Self::Method

@@ -630,6 +630,7 @@ impl<'tcx> EmbargoVisitor<'tcx> {
             // public, or are not namespaced at all.
             DefKind::AssocConst { .. }
             | DefKind::AssocTy
+            | DefKind::AssocTrait
             | DefKind::ConstParam
             | DefKind::Ctor(_, _)
             | DefKind::Enum
@@ -808,6 +809,7 @@ impl<'tcx> EmbargoVisitor<'tcx> {
             | DefKind::Variant
             | DefKind::AssocFn
             | DefKind::AssocTy
+            | DefKind::AssocTrait
             | DefKind::AssocConst { .. }
             | DefKind::TyParam
             | DefKind::AnonConst
@@ -1297,6 +1299,7 @@ impl<'tcx> Visitor<'tcx> for TypePrivacyVisitor<'tcx> {
                 DefKind::AssocFn
                     | DefKind::AssocConst { .. }
                     | DefKind::AssocTy
+                    | DefKind::AssocTrait
                     | DefKind::Static { .. }
             )
         });

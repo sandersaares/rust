@@ -115,6 +115,8 @@ pub enum DefKind {
     TraitAlias,
     /// Associated type: `trait MyTrait { type Assoc; }`
     AssocTy,
+    /// Associated trait: `trait MyTrait { trait Assoc; }`
+    AssocTrait,
     /// Type parameter: the `T` in `struct Vec<T> { ... }`
     TyParam,
 
@@ -222,6 +224,7 @@ impl DefKind {
             DefKind::TyAlias => "type alias",
             DefKind::TraitAlias => "trait alias",
             DefKind::AssocTy => "associated type",
+            DefKind::AssocTrait => "associated trait",
             DefKind::Union => "union",
             DefKind::Trait => "trait",
             DefKind::ForeignTy => "foreign type",
@@ -253,6 +256,7 @@ impl DefKind {
     pub fn article(&self) -> &'static str {
         match *self {
             DefKind::AssocTy
+            | DefKind::AssocTrait
             | DefKind::AssocConst { .. }
             | DefKind::AssocFn
             | DefKind::Enum
@@ -278,6 +282,7 @@ impl DefKind {
             | DefKind::ForeignTy
             | DefKind::TraitAlias
             | DefKind::AssocTy
+            | DefKind::AssocTrait
             | DefKind::TyParam => Some(Namespace::TypeNS),
 
             DefKind::Fn
@@ -325,6 +330,7 @@ impl DefKind {
             // An associated type name will be missing for an RPITIT (DefPathData::AnonAssocTy),
             // but those provide their own DefPathData.
             DefKind::AssocTy => DefPathData::TypeNs(name.unwrap()),
+            DefKind::AssocTrait => DefPathData::TypeNs(name.unwrap()),
 
             DefKind::Fn
             | DefKind::Const { .. }
@@ -378,6 +384,7 @@ impl DefKind {
             | DefKind::AssocConst { .. }
             | DefKind::AssocFn
             | DefKind::AssocTy
+            | DefKind::AssocTrait
             | DefKind::Closure
             | DefKind::Const { .. }
             | DefKind::Ctor(..)
@@ -427,6 +434,7 @@ impl DefKind {
             | DefKind::ForeignTy
             | DefKind::TraitAlias
             | DefKind::AssocTy
+            | DefKind::AssocTrait
             | DefKind::Const { .. }
             | DefKind::AssocConst { .. }
             | DefKind::Macro(..)
@@ -461,6 +469,7 @@ impl DefKind {
             | DefKind::ForeignTy
             | DefKind::TraitAlias
             | DefKind::AssocTy
+            | DefKind::AssocTrait
             | DefKind::TyParam
             | DefKind::Fn
             | DefKind::Const { .. }

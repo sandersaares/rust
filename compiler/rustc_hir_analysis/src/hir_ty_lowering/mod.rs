@@ -2253,7 +2253,7 @@ impl<'tcx> dyn HirTyLowerer<'tcx> + '_ {
                 );
                 self.check_param_uses_if_mcg(ty, span, true)
             }
-            Res::Def(DefKind::AssocTy, def_id) => {
+            Res::Def(DefKind::AssocTy | DefKind::AssocTrait, def_id) => {
                 let trait_segment = if let [modules @ .., trait_, _item] = path.segments {
                     let _ = self.prohibit_generic_args(modules.iter(), GenericsArgsErrExtend::None);
                     Some(trait_)
@@ -2806,6 +2806,7 @@ impl<'tcx> dyn HirTyLowerer<'tcx> + '_ {
                 | DefKind::TyAlias
                 | DefKind::TraitAlias
                 | DefKind::AssocTy
+                | DefKind::AssocTrait
                 | DefKind::Union
                 | DefKind::Trait
                 | DefKind::ForeignTy

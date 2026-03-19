@@ -2372,7 +2372,7 @@ fn lint_redundant_lifetimes<'tcx>(
         | DefKind::Impl { of_trait: _ } => {
             // Proceed
         }
-        DefKind::AssocFn | DefKind::AssocTy | DefKind::AssocConst { .. } => {
+        DefKind::AssocFn | DefKind::AssocTy | DefKind::AssocTrait | DefKind::AssocConst { .. } => {
             if tcx.trait_impl_of_assoc(owner_id.to_def_id()).is_some() {
                 // Don't check for redundant lifetimes for associated items of trait
                 // implementations, since the signature is required to be compatible

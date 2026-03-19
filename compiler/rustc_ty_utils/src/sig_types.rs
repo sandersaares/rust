@@ -42,7 +42,7 @@ pub fn walk_types<'tcx, V: SpannedTypeVisitor<'tcx>>(
             }
         }
         // Walk over the type behind the alias
-        DefKind::TyAlias { .. } | DefKind::AssocTy |
+        DefKind::TyAlias { .. } | DefKind::AssocTy | DefKind::AssocTrait |
         // Walk over the type of the item
         DefKind::Static { .. } | DefKind::Const { .. } | DefKind::AssocConst { .. } | DefKind::AnonConst => {
             if let Some(ty) = tcx.hir_node_by_def_id(item).ty() {

@@ -1,7 +1,5 @@
-// Test that an impl can provide `type` for a `trait` item.
-// Currently both lower to the same HIR representation (ImplItemKind::Type),
-// so the compiler accepts this. Future work: validate kind match.
-//@ check-pass
+// Test that an impl providing `type` for a `trait` item is rejected.
+// Trait expects `trait Bar;`, impl provides `type Bar = u32;`.
 //@ compile-flags: --crate-type=lib
 
 #![feature(associated_traits)]
@@ -14,5 +12,7 @@ trait Foo {
 struct S;
 
 impl Foo for S {
-    type Bar = u32; // Accepted: both lower to ImplItemKind::Type
+    //~^ ERROR not all trait items implemented, missing: `Bar`
+    type Bar = u32;
+    //~^ ERROR item `Bar` is an associated type, which doesn't match its trait `Foo`
 }

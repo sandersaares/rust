@@ -640,6 +640,7 @@ impl<'tcx> Ty<'tcx> {
                 | DefKind::ForeignTy
                 | DefKind::TraitAlias
                 | DefKind::AssocTy
+                | DefKind::AssocTrait
                 | DefKind::TyParam
                 | DefKind::Fn
                 | DefKind::Const { .. }

@@ -322,7 +322,8 @@ impl<'ra, 'tcx> Resolver<'ra, 'tcx> {
                 | DefKind::ForeignTy
                 | DefKind::OpaqueTy
                 | DefKind::TraitAlias
-                | DefKind::AssocTy,
+                | DefKind::AssocTy
+                | DefKind::AssocTrait,
                 _,
             )
             | Res::PrimTy(..)

@@ -2082,7 +2082,7 @@ impl<'tcx> TyCtxt<'tcx> {
                 self.constness(def_id) == hir::Constness::Const
             }
             DefKind::TraitAlias | DefKind::Trait => self.is_const_trait(def_id),
-            DefKind::AssocTy => {
+            DefKind::AssocTy | DefKind::AssocTrait => {
                 let parent_def_id = self.parent(def_id);
                 match self.def_kind(parent_def_id) {
                     DefKind::Impl { of_trait: false } => false,
