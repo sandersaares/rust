@@ -2525,6 +2525,13 @@ pub(super) fn check_type_bounds<'tcx>(
     impl_ty: ty::AssocItem,
     impl_trait_ref: ty::TraitRef<'tcx>,
 ) -> Result<(), ErrorGuaranteed> {
+    // Associated traits are not types — skip type_of-based checking.
+    if let ty::AssocKind::Type { data: ty::AssocTypeData::Trait(..) } = trait_ty.kind {
+        return Ok(());
+    }
+    if let ty::AssocKind::Type { data: ty::AssocTypeData::Trait(..) } = impl_ty.kind {
+        return Ok(());
+    }
     // Avoid bogus "type annotations needed `Foo: Bar`" errors on `impl Bar for Foo` in case
     // other `Foo` impls are incoherent.
     tcx.ensure_result().coherent_trait(impl_trait_ref.def_id)?;

@@ -86,10 +86,11 @@ pub(super) fn type_of(tcx: TyCtxt<'_>, def_id: LocalDefId) -> ty::EarlyBinder<'_
                 }
             }
             TraitItemKind::Trait(..) => {
-                // Associated traits don't have a type — return () placeholder.
-                // type_of shouldn't normally be called on associated traits,
-                // but some code paths query it (e.g., privacy checker).
-                Ty::new_tup(tcx, &[])
+                span_bug!(
+                    item.span,
+                    "type_of called on associated trait `{}` — associated traits are not types",
+                    item.ident,
+                );
             }
         },
 
@@ -121,8 +122,11 @@ pub(super) fn type_of(tcx: TyCtxt<'_>, def_id: LocalDefId) -> ty::EarlyBinder<'_
                 icx.lower_ty(ty)
             }
             ImplItemKind::Trait(..) => {
-                // Associated traits don't have a type.
-                Ty::new_tup(tcx, &[])
+                span_bug!(
+                    item.span,
+                    "type_of called on associated trait impl `{}` — associated traits are not types",
+                    item.ident,
+                );
             }
         },
 

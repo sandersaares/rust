@@ -5,6 +5,7 @@ use std::ops::ControlFlow;
 use rustc_data_structures::sso::SsoHashSet;
 use rustc_data_structures::stack::ensure_sufficient_stack;
 use rustc_errors::ErrorGuaranteed;
+use rustc_hir::def::DefKind;
 use rustc_hir::lang_items::LangItem;
 use rustc_infer::infer::DefineOpaqueTypes;
 use rustc_infer::infer::resolve::OpportunisticRegionResolver;
@@ -2043,7 +2044,13 @@ fn confirm_impl_candidate<'cx, 'tcx>(
     let args = translate_args(selcx.infcx, param_env, impl_def_id, args, assoc_term.defining_node);
 
     let term = if obligation.predicate.kind(tcx).is_type() {
-        tcx.type_of(assoc_term.item.def_id).map_bound(|ty| ty.into())
+        // Associated traits don't have types — return unit type placeholder
+        // so projection normalization doesn't panic.
+        if tcx.def_kind(assoc_term.item.def_id) == DefKind::AssocTrait {
+            ty::EarlyBinder::bind(Ty::new_tup(tcx, &[]).into())
+        } else {
+            tcx.type_of(assoc_term.item.def_id).map_bound(|ty| ty.into())
+        }
     } else {
         tcx.const_of_item(assoc_term.item.def_id).map_bound(|ct| ct.into())
     };

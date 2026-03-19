@@ -314,6 +314,10 @@ where
 }
 
 fn assoc_has_type_of(tcx: TyCtxt<'_>, item: &ty::AssocItem) -> bool {
+    // Associated traits are not types — never call type_of on them
+    if let ty::AssocKind::Type { data: ty::AssocTypeData::Trait(..) } = item.kind {
+        return false;
+    }
     if let ty::AssocKind::Type { data: ty::AssocTypeData::Normal(..) } = item.kind
         && let hir::Node::TraitItem(item) =
             tcx.hir_node(tcx.local_def_id_to_hir_id(item.def_id.expect_local()))

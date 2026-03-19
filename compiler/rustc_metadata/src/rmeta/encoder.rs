@@ -1241,7 +1241,10 @@ fn should_encode_type(tcx: TyCtxt<'_>, def_id: LocalDefId, def_kind: DefKind) ->
             }
         }
 
-        DefKind::AssocTy | DefKind::AssocTrait => {
+        // Associated traits are not types — don't encode type_of for them
+        DefKind::AssocTrait => false,
+
+        DefKind::AssocTy => {
             let assoc_item = tcx.associated_item(def_id);
             match assoc_item.container {
                 ty::AssocContainer::InherentImpl | ty::AssocContainer::TraitImpl(_) => true,

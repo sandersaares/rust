@@ -1111,7 +1111,7 @@ pub(crate) fn check_item_type(tcx: TyCtxt<'_>, def_id: LocalDefId) -> Result<(),
                     assoc_item.defaultness(tcx).has_value()
                 }
             };
-            if has_type {
+            if has_type && tcx.def_kind(def_id) != DefKind::AssocTrait {
                 tcx.ensure_ok().type_of(def_id);
             }
 

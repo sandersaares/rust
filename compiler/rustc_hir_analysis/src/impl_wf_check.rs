@@ -105,6 +105,10 @@ pub(crate) fn enforce_impl_lifetime_params_are_constrained(
         .flat_map(|&def_id| {
             let item = tcx.associated_item(def_id);
             match item.kind {
+                ty::AssocKind::Type { data: ty::AssocTypeData::Trait(..) } => {
+                    // Associated traits don't have types
+                    vec![]
+                }
                 ty::AssocKind::Type { .. } => {
                     if item.defaultness(tcx).has_value() {
                         cgp::parameters_for(tcx, tcx.type_of(def_id).instantiate_identity(), true)
