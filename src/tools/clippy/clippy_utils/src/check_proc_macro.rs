@@ -294,7 +294,7 @@ fn item_search_pat(item: &Item<'_>) -> (Pat, Pat) {
 fn trait_item_search_pat(item: &TraitItem<'_>) -> (Pat, Pat) {
     match &item.kind {
         TraitItemKind::Const(..) => (Pat::Str("const"), Pat::Str(";")),
-        TraitItemKind::Type(..) => (Pat::Str("type"), Pat::Str(";")),
+        TraitItemKind::Type(..) | TraitItemKind::Trait(..) => (Pat::Str("type"), Pat::Str(";")),
         TraitItemKind::Fn(sig, ..) => (fn_header_search_pat(sig.header), Pat::Str("")),
     }
 }
@@ -302,7 +302,7 @@ fn trait_item_search_pat(item: &TraitItem<'_>) -> (Pat, Pat) {
 fn impl_item_search_pat(item: &ImplItem<'_>) -> (Pat, Pat) {
     let (mut start_pat, end_pat) = match &item.kind {
         ImplItemKind::Const(..) => (Pat::Str("const"), Pat::Str(";")),
-        ImplItemKind::Type(..) => (Pat::Str("type"), Pat::Str(";")),
+        ImplItemKind::Type(..) | ImplItemKind::Trait(..) => (Pat::Str("type"), Pat::Str(";")),
         ImplItemKind::Fn(sig, ..) => (fn_header_search_pat(sig.header), Pat::Str("")),
     };
     if let ImplItemImplKind::Inherent { vis_span, .. } = item.impl_kind

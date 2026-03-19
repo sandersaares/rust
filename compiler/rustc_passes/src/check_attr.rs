@@ -91,6 +91,7 @@ fn target_from_impl_item<'tcx>(tcx: TyCtxt<'tcx>, impl_item: &hir::ImplItem<'_>)
             }
         }
         hir::ImplItemKind::Type(..) => Target::AssocTy,
+        hir::ImplItemKind::Trait(..) => Target::AssocTy,
     }
 }
 

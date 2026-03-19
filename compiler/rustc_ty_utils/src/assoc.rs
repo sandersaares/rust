@@ -95,11 +95,10 @@ fn associated_item_from_trait_item(
             ty::AssocKind::Fn { name, has_self: fn_has_self_parameter(tcx, owner_id) }
         }
         hir::TraitItemKind::Type { .. } => {
-            if tcx.def_kind(owner_id) == DefKind::AssocTrait {
-                ty::AssocKind::Type { data: ty::AssocTypeData::Trait(name) }
-            } else {
-                ty::AssocKind::Type { data: ty::AssocTypeData::Normal(name) }
-            }
+            ty::AssocKind::Type { data: ty::AssocTypeData::Normal(name) }
+        }
+        hir::TraitItemKind::Trait { .. } => {
+            ty::AssocKind::Type { data: ty::AssocTypeData::Trait(name) }
         }
     };
 
@@ -117,11 +116,10 @@ fn associated_item_from_impl_item(tcx: TyCtxt<'_>, impl_item: &hir::ImplItem<'_>
             ty::AssocKind::Fn { name, has_self: fn_has_self_parameter(tcx, owner_id) }
         }
         hir::ImplItemKind::Type { .. } => {
-            if tcx.def_kind(owner_id) == DefKind::AssocTrait {
-                ty::AssocKind::Type { data: ty::AssocTypeData::Trait(name) }
-            } else {
-                ty::AssocKind::Type { data: ty::AssocTypeData::Normal(name) }
-            }
+            ty::AssocKind::Type { data: ty::AssocTypeData::Normal(name) }
+        }
+        hir::ImplItemKind::Trait { .. } => {
+            ty::AssocKind::Type { data: ty::AssocTypeData::Trait(name) }
         }
     };
 

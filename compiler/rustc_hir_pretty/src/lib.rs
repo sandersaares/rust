@@ -967,6 +967,15 @@ impl<'a> State<'a> {
             hir::TraitItemKind::Type(bounds, default) => {
                 self.print_associated_type(ti.ident, ti.generics, Some(bounds), default);
             }
+            hir::TraitItemKind::Trait(bounds) => {
+                self.word_space("trait");
+                self.print_ident(ti.ident);
+                if !bounds.is_empty() {
+                    self.word_nbsp(":");
+                    self.print_bounds("", bounds);
+                }
+                self.word(";");
+            }
         }
         self.ann.post(self, AnnNode::SubItem(ti.hir_id()))
     }
@@ -991,6 +1000,15 @@ impl<'a> State<'a> {
             }
             hir::ImplItemKind::Type(ty) => {
                 self.print_associated_type(ii.ident, ii.generics, None, Some(ty));
+            }
+            hir::ImplItemKind::Trait(bounds) => {
+                self.word_space("trait");
+                self.print_ident(ii.ident);
+                if !bounds.is_empty() {
+                    self.word_space("=");
+                    self.print_bounds("", bounds);
+                }
+                self.word(";");
             }
         }
         self.ann.post(self, AnnNode::SubItem(ii.hir_id()))

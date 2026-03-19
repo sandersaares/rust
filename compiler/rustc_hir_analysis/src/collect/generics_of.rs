@@ -415,12 +415,16 @@ fn param_default_policy(node: Node<'_>) -> Option<ParamDefaultPolicy> {
         },
         Node::TraitItem(item) => match item.kind {
             // Re. GATs and GACs (generic_const_items), we're not bound by backward compatibility.
-            TraitItemKind::Const(..) | TraitItemKind::Type(..) => ParamDefaultPolicy::Forbidden,
+            TraitItemKind::Const(..) | TraitItemKind::Type(..) | TraitItemKind::Trait(..) => {
+                ParamDefaultPolicy::Forbidden
+            }
             TraitItemKind::Fn(..) => ParamDefaultPolicy::FutureCompatForbidden,
         },
         Node::ImplItem(item) => match item.kind {
             // Re. GATs and GACs (generic_const_items), we're not bound by backward compatibility.
-            ImplItemKind::Const(..) | ImplItemKind::Type(..) => ParamDefaultPolicy::Forbidden,
+            ImplItemKind::Const(..) | ImplItemKind::Type(..) | ImplItemKind::Trait(..) => {
+                ParamDefaultPolicy::Forbidden
+            }
             ImplItemKind::Fn(..) => ParamDefaultPolicy::FutureCompatForbidden,
         },
         // Generic params are (semantically) invalid on foreign items. Still, for maximum forward

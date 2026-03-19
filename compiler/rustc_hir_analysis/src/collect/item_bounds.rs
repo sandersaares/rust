@@ -480,15 +480,10 @@ pub(super) fn explicit_item_bounds_with_filter(
             }
         },
         hir::Node::Item(hir::Item { kind: hir::ItemKind::TyAlias(..), .. }) => &[],
-        // Associated trait impl items: the value bounds are stored as where-clause
-        // predicates on the impl item's generics during AST lowering.
+        // Associated trait impl items have their value bounds stored directly.
         hir::Node::ImplItem(hir::ImplItem {
-            kind: hir::ImplItemKind::Type(_), generics, ..
-        }) if tcx.def_kind(def_id) == hir::def::DefKind::AssocTrait
-            && !generics.predicates.is_empty() =>
-        {
-            // Extract GenericBounds from the synthetic where-clause predicates
-            // and lower them as item bounds on the projection type.
+            kind: hir::ImplItemKind::Trait(hir_bounds), ..
+        }) => {
             let item_ty = Ty::new_projection_from_args(
                 tcx,
                 def_id.to_def_id(),
@@ -496,22 +491,22 @@ pub(super) fn explicit_item_bounds_with_filter(
             );
             let icx = ItemCtxt::new(tcx, def_id);
             let mut bounds = Vec::new();
-
-            for pred in generics.predicates {
-                if let hir::WherePredicateKind::BoundPredicate(bp) = &pred.kind {
-                    icx.lowerer().lower_bounds(
-                        item_ty,
-                        bp.bounds,
-                        &mut bounds,
-                        ty::List::empty(),
-                        filter,
-                        OverlappingAsssocItemConstraints::Allowed,
-                    );
-                }
-            }
-
+            icx.lowerer().lower_bounds(
+                item_ty,
+                *hir_bounds,
+                &mut bounds,
+                ty::List::empty(),
+                filter,
+                OverlappingAsssocItemConstraints::Allowed,
+            );
             tcx.arena.alloc_from_iter(bounds)
         }
+        // Associated trait declarations in traits.
+        hir::Node::TraitItem(hir::TraitItem {
+            kind: hir::TraitItemKind::Trait(bounds),
+            span,
+            ..
+        }) => associated_type_bounds(tcx, def_id, *bounds, *span, filter),
         hir::Node::ImplItem(hir::ImplItem { kind: hir::ImplItemKind::Type(_), .. }) => &[],
         node => bug!("item_bounds called on {def_id:?} => {node:?}"),
     };

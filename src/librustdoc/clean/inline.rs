@@ -528,7 +528,9 @@ pub(crate) fn build_impl(
                         let assoc_tag = match item.kind {
                             hir::ImplItemKind::Const(..) => ty::AssocTag::Const,
                             hir::ImplItemKind::Fn(..) => ty::AssocTag::Fn,
-                            hir::ImplItemKind::Type(..) => ty::AssocTag::Type,
+                            hir::ImplItemKind::Type(..) | hir::ImplItemKind::Trait(..) => {
+                                ty::AssocTag::Type
+                            }
                         };
                         let trait_item = tcx
                             .associated_items(associated_trait.def_id)

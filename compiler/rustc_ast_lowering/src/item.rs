@@ -1090,8 +1090,7 @@ impl<'hir> LoweringContext<'_, 'hir> {
                 panic!("macros should have been expanded by now")
             }
             AssocItemKind::Trait(box AssocTraitItem { ident, bounds, has_value, .. }) => {
-                // Lower associated trait as TraitItemKind::Type in the HIR.
-                // The DefKind::AssocTrait distinguishes this from associated types.
+                // Lower associated trait as TraitItemKind::Trait in the HIR.
                 let (generics, kind) = self.lower_generics(
                     &Generics::default(),
                     i.id,
@@ -1102,7 +1101,7 @@ impl<'hir> LoweringContext<'_, 'hir> {
                             RelaxedBoundPolicy::Allowed,
                             ImplTraitContext::Disallowed(ImplTraitPosition::Generic),
                         );
-                        hir::TraitItemKind::Type(hir_bounds, None)
+                        hir::TraitItemKind::Trait(hir_bounds)
                     },
                 );
                 (*ident, generics, kind, *has_value)
@@ -1303,11 +1302,8 @@ impl<'hir> LoweringContext<'_, 'hir> {
                 panic!("macros should have been expanded by now")
             }
             AssocItemKind::Trait(box AssocTraitItem { ident, value, has_value, .. }) => {
-                // Lower associated trait in impl as ImplItemKind::Type.
-                // The value bounds (e.g., Send + Clone from `trait Bar = Send + Clone;`)
-                // are stored as where-clause predicates on the impl item's generics
-                // so that explicit_item_bounds can read them for solver enforcement.
-                let unit_ty = self.arena.alloc(self.ty(i.span, hir::TyKind::Tup(&[])));
+                // Lower associated trait in impl as ImplItemKind::Trait with the
+                // value trait bounds stored directly on the HIR node.
                 (
                     *ident,
                     self.lower_generics(
@@ -1315,11 +1311,8 @@ impl<'hir> LoweringContext<'_, 'hir> {
                         i.id,
                         ImplTraitContext::Disallowed(ImplTraitPosition::Generic),
                         |this| {
-                            if *has_value {
-                                // Lower each trait bound and add as a where predicate
-                                // on a unit-typed bounded_ty. This puts the bounds in
-                                // the HIR generics where explicit_item_bounds can find them.
-                                let hir_bounds: Vec<_> = value
+                            let bounds: Vec<hir::GenericBound<'_>> = if *has_value {
+                                value
                                     .iter()
                                     .filter_map(|bound| {
                                         if let ast::GenericBound::Trait(ptr) = bound {
@@ -1338,31 +1331,11 @@ impl<'hir> LoweringContext<'_, 'hir> {
                                             None
                                         }
                                     })
-                                    .collect();
-
-                                if !hir_bounds.is_empty() {
-                                    let bounded_ty =
-                                        this.arena.alloc(this.ty(i.span, hir::TyKind::Tup(&[])));
-                                    let bounds = this.arena.alloc_from_iter(hir_bounds);
-                                    let hir_id = this.next_id();
-                                    let span = this.lower_span(i.span);
-                                    let kind =
-                                        this.arena.alloc(hir::WherePredicateKind::BoundPredicate(
-                                            hir::WhereBoundPredicate {
-                                                origin: PredicateOrigin::WhereClause,
-                                                bound_generic_params: &[],
-                                                bounded_ty,
-                                                bounds,
-                                            },
-                                        ));
-                                    this.impl_trait_bounds.push(hir::WherePredicate {
-                                        hir_id,
-                                        span,
-                                        kind,
-                                    });
-                                }
-                            }
-                            hir::ImplItemKind::Type(unit_ty)
+                                    .collect()
+                            } else {
+                                Vec::new()
+                            };
+                            hir::ImplItemKind::Trait(this.arena.alloc_from_iter(bounds))
                         },
                     ),
                 )

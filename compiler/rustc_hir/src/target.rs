@@ -209,6 +209,7 @@ impl Target {
                 Target::Method(MethodKind::Trait { body: true })
             }
             TraitItemKind::Type(..) => Target::AssocTy,
+            TraitItemKind::Trait(..) => Target::AssocTy, // reuse target for now
         }
     }
 

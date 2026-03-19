@@ -859,6 +859,12 @@ impl<'a, 'tcx> Visitor<'tcx> for BoundVarContext<'a, 'tcx> {
                     }
                 })
             }
+            Trait(bounds) => self.visit_early(trait_item.hir_id(), trait_item.generics, |this| {
+                this.visit_generics(trait_item.generics);
+                for bound in bounds {
+                    this.visit_param_bound(bound);
+                }
+            }),
             Const(_, _, _) => self.visit_early(trait_item.hir_id(), trait_item.generics, |this| {
                 intravisit::walk_trait_item(this, trait_item)
             }),
@@ -875,6 +881,12 @@ impl<'a, 'tcx> Visitor<'tcx> for BoundVarContext<'a, 'tcx> {
             Type(ty) => self.visit_early(impl_item.hir_id(), impl_item.generics, |this| {
                 this.visit_generics(impl_item.generics);
                 this.visit_ty_unambig(ty);
+            }),
+            Trait(bounds) => self.visit_early(impl_item.hir_id(), impl_item.generics, |this| {
+                this.visit_generics(impl_item.generics);
+                for bound in bounds {
+                    this.visit_param_bound(bound);
+                }
             }),
             Const(_, _) => self.visit_early(impl_item.hir_id(), impl_item.generics, |this| {
                 intravisit::walk_impl_item(this, impl_item)

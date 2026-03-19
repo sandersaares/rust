@@ -1251,6 +1251,11 @@ fn clean_trait_item<'tcx>(trait_item: &hir::TraitItem<'tcx>, cx: &mut DocContext
                 let bounds = bounds.iter().filter_map(|x| clean_generic_bound(x, cx)).collect();
                 RequiredAssocTypeItem(generics, bounds)
             }
+            hir::TraitItemKind::Trait(bounds) => {
+                let generics = enter_impl_trait(cx, |cx| clean_generics(trait_item.generics, cx));
+                let bounds = bounds.iter().filter_map(|x| clean_generic_bound(x, cx)).collect();
+                RequiredAssocTypeItem(generics, bounds)
+            }
         };
         Item::from_def_id_and_parts(local_did, Some(trait_item.ident.name), inner, cx)
     })
@@ -1290,6 +1295,11 @@ pub(crate) fn clean_impl_item<'tcx>(
                     }),
                     Vec::new(),
                 )
+            }
+            hir::ImplItemKind::Trait(hir_bounds) => {
+                let generics = clean_generics(impl_.generics, cx);
+                let bounds = hir_bounds.iter().filter_map(|x| clean_generic_bound(x, cx)).collect();
+                RequiredAssocTypeItem(generics, bounds)
             }
         };
 

@@ -2558,6 +2558,13 @@ pub(super) fn check_type_bounds<'tcx>(
                 ..
             }) => tcx.def_span(impl_ty_def_id),
             hir::Node::ImplItem(hir::ImplItem { kind: hir::ImplItemKind::Type(ty), .. }) => ty.span,
+            // Associated trait items — use def_span
+            hir::Node::TraitItem(hir::TraitItem {
+                kind: hir::TraitItemKind::Trait(..), ..
+            })
+            | hir::Node::ImplItem(hir::ImplItem { kind: hir::ImplItemKind::Trait(..), .. }) => {
+                tcx.def_span(impl_ty_def_id)
+            }
             item => span_bug!(
                 tcx.def_span(impl_ty_def_id),
                 "cannot call `check_type_bounds` on item: {item:?}",

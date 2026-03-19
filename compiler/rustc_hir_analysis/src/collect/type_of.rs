@@ -79,14 +79,17 @@ pub(super) fn type_of(tcx: TyCtxt<'_>, def_id: LocalDefId) -> ty::EarlyBinder<'_
                 .unwrap_or_else(|| icx.lower_ty(ty)),
             TraitItemKind::Type(_, Some(ty)) => icx.lower_ty(ty),
             TraitItemKind::Type(_, None) => {
-                if tcx.def_kind(def_id) == hir::def::DefKind::AssocTrait
-                    || item.defaultness.has_value()
-                {
-                    // Associated traits return () as placeholder.
+                if item.defaultness.has_value() {
                     Ty::new_tup(tcx, &[])
                 } else {
                     span_bug!(item.span, "associated type missing default");
                 }
+            }
+            TraitItemKind::Trait(..) => {
+                // Associated traits don't have a type — return () placeholder.
+                // type_of shouldn't normally be called on associated traits,
+                // but some code paths query it (e.g., privacy checker).
+                Ty::new_tup(tcx, &[])
             }
         },
 
@@ -116,6 +119,10 @@ pub(super) fn type_of(tcx: TyCtxt<'_>, def_id: LocalDefId) -> ty::EarlyBinder<'_
                 }
 
                 icx.lower_ty(ty)
+            }
+            ImplItemKind::Trait(..) => {
+                // Associated traits don't have a type.
+                Ty::new_tup(tcx, &[])
             }
         },
 
