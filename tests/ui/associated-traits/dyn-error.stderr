@@ -1,0 +1,15 @@
+error: associated traits cannot be used with `dyn`
+  --> $DIR/dyn-error.rs:11:30
+   |
+LL | fn with_dyn<T: Foo>(_x: &dyn T::Bar) {}
+   |                              ^^^^^^
+
+error[E0224]: at least one trait is required for an object type
+  --> $DIR/dyn-error.rs:11:26
+   |
+LL | fn with_dyn<T: Foo>(_x: &dyn T::Bar) {}
+   |                          ^^^^^^^^^^
+
+error: aborting due to 2 previous errors
+
+For more information about this error, try `rustc --explain E0224`.

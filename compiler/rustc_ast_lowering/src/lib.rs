@@ -1422,6 +1422,24 @@ impl<'a, 'hir> LoweringContext<'a, 'hir> {
                             // takes care of rejecting invalid modifier combinations and
                             // const trait bounds in trait object types.
                             GenericBound::Trait(ty) => {
+                                // Check if this is an associated trait (partial resolution).
+                                // dyn cannot use associated traits.
+                                let res = this.resolver.get_partial_res(ty.trait_ref.ref_id);
+                                if let Some(partial_res) = res
+                                    && partial_res.unresolved_segments() > 0
+                                    && matches!(
+                                        partial_res.base_res(),
+                                        hir::def::Res::Def(hir::def::DefKind::TyParam, _)
+                                            | hir::def::Res::SelfTyParam { .. }
+                                            | hir::def::Res::SelfTyAlias { .. }
+                                    )
+                                {
+                                    this.dcx().span_err(
+                                        ty.span,
+                                        "associated traits cannot be used with `dyn`",
+                                    );
+                                    return None;
+                                }
                                 let trait_ref = this.lower_poly_trait_ref(
                                     ty,
                                     RelaxedBoundPolicy::Forbidden(
