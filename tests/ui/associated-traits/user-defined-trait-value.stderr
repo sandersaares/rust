@@ -1,0 +1,29 @@
+error[E0276]: impl has stricter requirements than trait
+  --> $DIR/user-defined-trait-value.rs:22:22
+   |
+LL |     trait Behavior;
+   |     --------------- definition of `Behavior` from trait
+...
+LL |     trait Behavior = MyCustomTrait;
+   |                      ^^^^^^^^^^^^^ impl has extra requirement `(): MyCustomTrait`
+
+error[E0277]: the trait bound `(): MyCustomTrait` is not satisfied
+  --> $DIR/user-defined-trait-value.rs:22:5
+   |
+LL |     trait Behavior = MyCustomTrait;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `MyCustomTrait` is not implemented for `()`
+   |
+help: this trait has no implementations, consider adding one
+  --> $DIR/user-defined-trait-value.rs:11:1
+   |
+LL | trait MyCustomTrait {
+   | ^^^^^^^^^^^^^^^^^^^
+help: add `#![feature(trivial_bounds)]` to the crate attributes to enable
+   |
+LL + #![feature(trivial_bounds)]
+   |
+
+error: aborting due to 2 previous errors
+
+Some errors have detailed explanations: E0276, E0277.
+For more information about an error, try `rustc --explain E0276`.
