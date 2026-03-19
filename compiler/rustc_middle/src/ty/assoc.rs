@@ -30,9 +30,13 @@ impl AssocItem {
         match self.kind {
             ty::AssocKind::Type { data: AssocTypeData::Normal(name) } => Some(name),
             ty::AssocKind::Type { data: AssocTypeData::Rpitit(_) } => None,
-            ty::AssocKind::Type { data: AssocTypeData::Trait(name) } => Some(name),
+            ty::AssocKind::Type { data: AssocTypeData::Trait(_) } => {
+                // AssocTypeData::Trait is deprecated — use AssocKind::Trait
+                bug!("AssocTypeData::Trait should not be used; use AssocKind::Trait")
+            }
             ty::AssocKind::Const { name, .. } => Some(name),
             ty::AssocKind::Fn { name, .. } => Some(name),
+            ty::AssocKind::Trait { name, .. } => Some(name),
         }
     }
 
@@ -120,6 +124,7 @@ impl AssocItem {
                 tcx.fn_sig(self.def_id).instantiate_identity().skip_binder().to_string()
             }
             ty::AssocKind::Type { .. } => format!("type {};", self.name()),
+            ty::AssocKind::Trait { .. } => format!("trait {};", self.name()),
             ty::AssocKind::Const { name, .. } => {
                 format!("const {}: {:?};", name, tcx.type_of(self.def_id).instantiate_identity())
             }
@@ -180,12 +185,13 @@ pub enum AssocKind {
     Const { name: Symbol, is_type_const: bool },
     Fn { name: Symbol, has_self: bool },
     Type { data: AssocTypeData },
+    Trait { name: Symbol },
 }
 
 impl AssocKind {
     pub fn namespace(&self) -> Namespace {
         match self {
-            Self::Type { .. } => Namespace::TypeNS,
+            Self::Type { .. } | Self::Trait { .. } => Namespace::TypeNS,
             Self::Const { .. } | Self::Fn { .. } => Namespace::ValueNS,
         }
     }
@@ -195,6 +201,7 @@ impl AssocKind {
             Self::Const { .. } => AssocTag::Const,
             Self::Fn { .. } => AssocTag::Fn,
             Self::Type { .. } => AssocTag::Type,
+            Self::Trait { .. } => AssocTag::Trait,
         }
     }
 
@@ -204,8 +211,8 @@ impl AssocKind {
                 DefKind::AssocConst { is_type_const: *is_type_const }
             }
             Self::Fn { .. } => DefKind::AssocFn,
-            Self::Type { data: AssocTypeData::Trait(_) } => DefKind::AssocTrait,
             Self::Type { .. } => DefKind::AssocTy,
+            Self::Trait { .. } => DefKind::AssocTrait,
         }
     }
 
@@ -229,6 +236,7 @@ pub enum AssocTag {
     Const,
     Fn,
     Type,
+    Trait,
 }
 
 impl AssocTag {
@@ -238,6 +246,7 @@ impl AssocTag {
             Self::Const => "associated constant",
             Self::Fn => "associated function",
             Self::Type => "associated type",
+            Self::Trait => "associated trait",
         }
     }
 }

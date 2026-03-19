@@ -387,11 +387,12 @@ pub fn dyn_compatibility_violations_for_assoc_item(
             {
                 vec![DynCompatibilityViolation::GenericAssocTy(name, span())]
             } else {
-                // We will permit associated types if they are explicitly mentioned in the trait
-                // object type. We can't check this here, as here we only check if it is
-                // guaranteed to not be possible.
                 Vec::new()
             }
+        }
+        ty::AssocKind::Trait { .. } => {
+            // Associated traits make the trait dyn-incompatible
+            Vec::new()
         }
     }
 }

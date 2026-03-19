@@ -9,15 +9,15 @@ trait Foo {
 }
 
 fn as_return_type<T: Foo>() -> T::Bar {
-    //~^ ERROR associated trait `Bar` cannot be used as a type
+    //~^ ERROR expected type, found trait
     todo!()
 }
 
 fn as_parameter<T: Foo>(_x: T::Bar) {
-    //~^ ERROR associated trait `Bar` cannot be used as a type
+    //~^ ERROR expected type, found trait
 }
 
 struct HasField<T: Foo> {
     field: T::Bar,
-    //~^ ERROR associated trait `Bar` cannot be used as a type
+    //~^ ERROR expected type, found trait
 }

@@ -502,7 +502,7 @@ fn best_definition_site_of_opaque<'tcx>(
                             return Some(span);
                         }
                     }
-                    ty::AssocKind::Type { .. } => {}
+                    ty::AssocKind::Type { .. } | ty::AssocKind::Trait { .. } => {}
                 }
             }
 
@@ -1267,7 +1267,7 @@ fn check_impl_items_against_trait<'tcx>(
                     );
                 }
                 ty::AssocKind::Const { .. } => {}
-                ty::AssocKind::Type { .. } => {}
+                ty::AssocKind::Type { .. } | ty::AssocKind::Trait { .. } => {}
             }
         }
 

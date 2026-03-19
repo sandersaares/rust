@@ -1,20 +1,38 @@
-error: associated trait `Bar` cannot be used as a type; use it in a bound: `B: Foo::Bar` 
-  --> $DIR/type-position-various.rs:11:32
+error: expected type, found trait
+  --> $DIR/type-position-various.rs:11:35
    |
 LL | fn as_return_type<T: Foo>() -> T::Bar {
-   |                                ^^^^^^
+   |                                   ^^^ unexpected trait
+   |
+note: the associated trait is defined here
+  --> $DIR/type-position-various.rs:8:5
+   |
+LL |     trait Bar;
+   |     ^^^^^^^^^^
 
-error: associated trait `Bar` cannot be used as a type; use it in a bound: `B: Foo::Bar` 
-  --> $DIR/type-position-various.rs:16:29
+error: expected type, found trait
+  --> $DIR/type-position-various.rs:16:32
    |
 LL | fn as_parameter<T: Foo>(_x: T::Bar) {
-   |                             ^^^^^^
+   |                                ^^^ unexpected trait
+   |
+note: the associated trait is defined here
+  --> $DIR/type-position-various.rs:8:5
+   |
+LL |     trait Bar;
+   |     ^^^^^^^^^^
 
-error: associated trait `Bar` cannot be used as a type; use it in a bound: `B: Foo::Bar` 
-  --> $DIR/type-position-various.rs:21:12
+error: expected type, found trait
+  --> $DIR/type-position-various.rs:21:15
    |
 LL |     field: T::Bar,
-   |            ^^^^^^
+   |               ^^^ unexpected trait
+   |
+note: the associated trait is defined here
+  --> $DIR/type-position-various.rs:8:5
+   |
+LL |     trait Bar;
+   |     ^^^^^^^^^^
 
 error: aborting due to 3 previous errors
 

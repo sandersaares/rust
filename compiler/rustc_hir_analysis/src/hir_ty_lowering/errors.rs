@@ -1107,6 +1107,7 @@ impl<'tcx> dyn HirTyLowerer<'tcx> + '_ {
                         match item.kind {
                             ty::AssocKind::Const { .. } => "CONST",
                             ty::AssocKind::Type { .. } => "Type",
+                            ty::AssocKind::Trait { .. } => "Trait",
                             ty::AssocKind::Fn { .. } => unreachable!(),
                         }
                     )
@@ -1849,5 +1850,6 @@ pub(crate) fn assoc_tag_str(assoc_tag: ty::AssocTag) -> &'static str {
         ty::AssocTag::Fn => "function",
         ty::AssocTag::Const => "constant",
         ty::AssocTag::Type => "type",
+        ty::AssocTag::Trait => "trait",
     }
 }

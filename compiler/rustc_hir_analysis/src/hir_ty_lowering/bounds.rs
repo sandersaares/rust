@@ -422,7 +422,7 @@ impl<'tcx> dyn HirTyLowerer<'tcx> + '_ {
                     let result = self.resolve_type_relative_path(
                         base_ty,
                         qself_ty,
-                        ty::AssocTag::Type, // Associated traits are registered as AssocTy
+                        ty::AssocTag::Trait, // Associated traits have their own tag
                         segment,
                         segment.hir_id,
                         *span,

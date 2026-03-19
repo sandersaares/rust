@@ -45,7 +45,9 @@ pub(super) fn compare_impl_item(
 
     match impl_item.kind {
         ty::AssocKind::Fn { .. } => compare_impl_method(tcx, impl_item, trait_item, impl_trait_ref),
-        ty::AssocKind::Type { .. } => compare_impl_ty(tcx, impl_item, trait_item, impl_trait_ref),
+        ty::AssocKind::Type { .. } | ty::AssocKind::Trait { .. } => {
+            compare_impl_ty(tcx, impl_item, trait_item, impl_trait_ref)
+        }
         ty::AssocKind::Const { .. } => {
             compare_impl_const(tcx, impl_item, trait_item, impl_trait_ref)
         }
@@ -2526,10 +2528,10 @@ pub(super) fn check_type_bounds<'tcx>(
     impl_trait_ref: ty::TraitRef<'tcx>,
 ) -> Result<(), ErrorGuaranteed> {
     // Associated traits are not types — skip type_of-based checking.
-    if let ty::AssocKind::Type { data: ty::AssocTypeData::Trait(..) } = trait_ty.kind {
+    if let ty::AssocKind::Trait { .. } = trait_ty.kind {
         return Ok(());
     }
-    if let ty::AssocKind::Type { data: ty::AssocTypeData::Trait(..) } = impl_ty.kind {
+    if let ty::AssocKind::Trait { .. } = impl_ty.kind {
         return Ok(());
     }
     // Avoid bogus "type annotations needed `Foo: Bar`" errors on `impl Bar for Foo` in case

@@ -1722,7 +1722,7 @@ impl<'tcx> dyn HirTyLowerer<'tcx> + '_ {
                 // enabled. Theoretically it'd be fine to do so since we feature-gate their
                 // definition site. However, the current implementation of inherent associated
                 // items is somewhat brittle, so let's not run it by default.
-                ty::AssocTag::Type => return Ok(None),
+                ty::AssocTag::Type | ty::AssocTag::Trait => return Ok(None),
                 ty::AssocTag::Const => {
                     // We also gate the mgca codepath for type-level uses of inherent consts
                     // with the inherent_associated_types feature gate since it relies on the

@@ -105,7 +105,7 @@ pub(crate) fn enforce_impl_lifetime_params_are_constrained(
         .flat_map(|&def_id| {
             let item = tcx.associated_item(def_id);
             match item.kind {
-                ty::AssocKind::Type { data: ty::AssocTypeData::Trait(..) } => {
+                ty::AssocKind::Trait { .. } => {
                     // Associated traits don't have types
                     vec![]
                 }

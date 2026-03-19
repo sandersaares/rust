@@ -1346,9 +1346,7 @@ impl<'a> CrateMetadataRef<'a> {
                 };
                 ty::AssocKind::Type { data }
             }
-            DefKind::AssocTrait => {
-                ty::AssocKind::Type { data: ty::AssocTypeData::Trait(self.item_name(id)) }
-            }
+            DefKind::AssocTrait => ty::AssocKind::Trait { name: self.item_name(id) },
             _ => bug!("cannot get associated-item of `{:?}`", self.def_key(id)),
         };
         let container =

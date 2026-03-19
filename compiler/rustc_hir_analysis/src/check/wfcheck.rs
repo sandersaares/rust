@@ -411,7 +411,7 @@ fn check_gat_where_clauses(tcx: TyCtxt<'_>, trait_def_id: LocalDefId) {
                         )
                     }
                     // In our example, this corresponds to the `Iter` and `Item` associated types
-                    ty::AssocKind::Type { .. } => {
+                    ty::AssocKind::Type { .. } | ty::AssocKind::Trait { .. } => {
                         // If our associated item is a GAT with missing bounds, add them to
                         // the param-env here. This allows this GAT to propagate missing bounds
                         // to other GATs.
@@ -977,7 +977,7 @@ pub(crate) fn check_associated_item(
                 check_fn_or_method(wfcx, sig, hir_sig.decl, def_id);
                 check_method_receiver(wfcx, hir_sig, item, self_ty)
             }
-            ty::AssocKind::Type { data: ty::AssocTypeData::Trait(..) } => {
+            ty::AssocKind::Trait { .. } => {
                 // Associated traits are not types — skip type_of.
                 if let ty::AssocContainer::Trait = item.container {
                     check_associated_type_bounds(wfcx, item, span)

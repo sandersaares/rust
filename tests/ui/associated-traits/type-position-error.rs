@@ -10,5 +10,5 @@ trait Foo {
 
 fn bad<T: Foo>() {
     let _x: T::Bar = todo!();
-    //~^ ERROR associated trait `Bar` cannot be used as a type
+    //~^ ERROR expected type, found trait
 }

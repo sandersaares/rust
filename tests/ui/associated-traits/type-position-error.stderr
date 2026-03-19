@@ -1,8 +1,14 @@
-error: associated trait `Bar` cannot be used as a type; use it in a bound: `B: Foo::Bar` 
-  --> $DIR/type-position-error.rs:12:13
+error: expected type, found trait
+  --> $DIR/type-position-error.rs:12:16
    |
 LL |     let _x: T::Bar = todo!();
-   |             ^^^^^^
+   |                ^^^ unexpected trait
+   |
+note: the associated trait is defined here
+  --> $DIR/type-position-error.rs:8:5
+   |
+LL |     trait Bar;
+   |     ^^^^^^^^^^
 
 error: aborting due to 1 previous error
 

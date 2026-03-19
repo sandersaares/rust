@@ -542,7 +542,7 @@ fn suggestion_signature<'tcx>(
             tcx.predicates_of(assoc.def_id).instantiate_own(tcx, args),
             assoc,
         ),
-        ty::AssocKind::Type { data: ty::AssocTypeData::Trait(_) } => {
+        ty::AssocKind::Trait { .. } => {
             format!("trait {} = /* Trait */;", assoc.name())
         }
         ty::AssocKind::Type { .. } => {

@@ -36,8 +36,8 @@ pub(super) fn find_opaque_ty_constraints_for_impl_trait_in_assoc_type(
             ty::AssocKind::Const { .. } | ty::AssocKind::Fn { .. } => {
                 locator.check(assoc_id.expect_local())
             }
-            // Associated types don't have bodies, so they can't constrain hidden types
-            ty::AssocKind::Type { .. } => {}
+            // Associated types/traits don't have bodies, so they can't constrain hidden types
+            ty::AssocKind::Type { .. } | ty::AssocKind::Trait { .. } => {}
         }
     }
 

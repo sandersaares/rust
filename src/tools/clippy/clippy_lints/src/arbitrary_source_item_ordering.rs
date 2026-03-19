@@ -476,7 +476,7 @@ fn convert_assoc_item_kind(cx: &LateContext<'_>, owner_id: OwnerId) -> SourceIte
 
     match kind {
         AssocKind::Const { .. } => Const,
-        AssocKind::Type { .. } => Type,
+        AssocKind::Type { .. } | AssocKind::Trait { .. } => Type,
         AssocKind::Fn { .. } => Fn,
     }
 }

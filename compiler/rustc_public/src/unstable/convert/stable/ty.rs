@@ -1067,13 +1067,15 @@ impl<'tcx> Stable<'tcx> for ty::AssocKind {
                     ty::AssocTypeData::Rpitit(rpitit) => {
                         AssocTypeData::Rpitit(rpitit.stable(tables, cx))
                     }
-                    ty::AssocTypeData::Trait(name) => {
-                        // For now, expose associated traits as normal associated types
-                        // through the stable API.
-                        AssocTypeData::Normal(name.to_string())
+                    ty::AssocTypeData::Trait(_) => {
+                        bug!("AssocTypeData::Trait is deprecated")
                     }
                 },
             },
+            ty::AssocKind::Trait { name } => {
+                // Expose as type for now through stable API
+                AssocKind::Type { data: AssocTypeData::Normal(name.to_string()) }
+            }
         }
     }
 }
