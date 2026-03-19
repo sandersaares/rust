@@ -2311,7 +2311,7 @@ fn compare_impl_ty<'tcx>(
 
     // For associated traits in impls, the type_of returns () which trivially
     // satisfies most bounds, making check_type_bounds meaningless. Instead,
-    // check that the impl's value traits satisfy the trait's declaration bounds.
+    // check that each value trait is a subtrait of each declaration bound.
     if let Some(local_id) = impl_ty.def_id.as_local() {
         if let hir::Node::ImplItem(impl_item) = tcx.hir_node_by_def_id(local_id) {
             if let hir::ImplItemKind::Type(ty) = impl_item.kind
@@ -2319,14 +2319,64 @@ fn compare_impl_ty<'tcx>(
                 && !impl_item.generics.predicates.is_empty()
             {
                 // This is an associated trait impl item (trait Bar = Send).
-                // Skip check_type_bounds which would check (): Bounds (meaningless).
-                //
-                // Declaration bound enforcement (trait Bar: Clone vs trait Bar = Send)
-                // is a known limitation — it requires checking that the value traits
-                // are supertraits of the declaration bounds, which needs supertrait
-                // inspection that is beyond the current check_type_bounds flow.
-                // This will be caught at usage site when the solver resolves
-                // B: T::Bar and checks the declaration bounds on the projection.
+                // Get declaration bound trait DefIds from the trait's item bounds.
+                let trait_item_bounds = tcx.explicit_item_bounds(trait_ty.def_id);
+                let mut decl_bound_trait_ids: Vec<DefId> = Vec::new();
+                for &(clause, _span) in trait_item_bounds.skip_binder() {
+                    if let Some(tp) = clause.as_trait_clause() {
+                        let trait_id = tp.skip_binder().def_id();
+                        // Skip implicit Sized/MetaSized bounds — they're not meaningful
+                        // declaration bounds for associated traits.
+                        if tcx.is_lang_item(trait_id, hir::LangItem::Sized)
+                            || tcx.is_lang_item(trait_id, hir::LangItem::MetaSized)
+                            || tcx.is_lang_item(trait_id, hir::LangItem::PointeeSized)
+                        {
+                            continue;
+                        }
+                        decl_bound_trait_ids.push(trait_id);
+                    }
+                }
+
+                if !decl_bound_trait_ids.is_empty() {
+                    // Get the value trait DefIds from the impl's item bounds.
+                    let impl_item_bounds = tcx.explicit_item_bounds(impl_ty.def_id);
+                    let mut value_trait_ids: Vec<DefId> = Vec::new();
+                    for &(clause, _span) in impl_item_bounds.skip_binder() {
+                        if let Some(tp) = clause.as_trait_clause() {
+                            value_trait_ids.push(tp.skip_binder().def_id());
+                        }
+                    }
+
+                    // For each declaration bound, check that at least one value trait
+                    // has it as a supertrait.
+                    for &decl_id in &decl_bound_trait_ids {
+                        let mut satisfied = false;
+                        for &value_id in &value_trait_ids {
+                            // Check if decl_id is a supertrait of value_id
+                            let supertrait_ids: Vec<_> =
+                                traits::supertrait_def_ids(tcx, value_id).collect();
+                            if supertrait_ids.contains(&decl_id) {
+                                satisfied = true;
+                                break;
+                            }
+                        }
+                        if !satisfied {
+                            let value_names: Vec<_> =
+                                value_trait_ids.iter().map(|&id| tcx.def_path_str(id)).collect();
+                            return Err(tcx.dcx().span_err(
+                                tcx.def_span(impl_ty.def_id),
+                                format!(
+                                    "associated trait bound `{}` is not satisfied: \
+                                     `{}` is not a subtrait of `{}`",
+                                    impl_ty.name(),
+                                    value_names.join(" + "),
+                                    tcx.def_path_str(decl_id),
+                                ),
+                            ));
+                        }
+                    }
+                }
+
                 return Ok(());
             }
         }

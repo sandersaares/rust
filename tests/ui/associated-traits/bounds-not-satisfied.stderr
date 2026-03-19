@@ -1,0 +1,8 @@
+error: associated trait bound `Bar` is not satisfied: `Send` is not a subtrait of `Clone`
+  --> $DIR/bounds-not-satisfied.rs:14:5
+   |
+LL |     trait Bar = Send;
+   |     ^^^^^^^^^
+
+error: aborting due to 1 previous error
+

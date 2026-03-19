@@ -1091,8 +1091,6 @@ impl<'hir> LoweringContext<'_, 'hir> {
             }
             AssocItemKind::Trait(box AssocTraitItem { ident, bounds, has_value, .. }) => {
                 // Lower associated trait as TraitItemKind::Type in the HIR.
-                // The semantic distinction (AssocKind::Trait vs AssocKind::Type)
-                // is tracked at the ty level, not in the HIR.
                 let (generics, kind) = self.lower_generics(
                     &Generics::default(),
                     i.id,
@@ -1103,9 +1101,27 @@ impl<'hir> LoweringContext<'_, 'hir> {
                             RelaxedBoundPolicy::Allowed,
                             ImplTraitContext::Disallowed(ImplTraitPosition::Generic),
                         );
-                        // For declarations (no value), lower as Type with no concrete type.
-                        // For defaults (has value), we'd need to lower the trait ref as a type,
-                        // but for now we treat defaults as not having a value at the HIR level.
+
+                        // Add a synthetic marker predicate to distinguish associated
+                        // traits from associated types at the HIR level. We use a
+                        // unit-typed predicate with no bounds as the marker.
+                        let marker_ty = this.arena.alloc(this.ty(i.span, hir::TyKind::Tup(&[])));
+                        let marker_hir_id = this.next_id();
+                        let marker_span = this.lower_span(i.span);
+                        let marker_kind = this.arena.alloc(
+                            hir::WherePredicateKind::BoundPredicate(hir::WhereBoundPredicate {
+                                origin: PredicateOrigin::WhereClause,
+                                bound_generic_params: &[],
+                                bounded_ty: marker_ty,
+                                bounds: &[],
+                            }),
+                        );
+                        this.impl_trait_bounds.push(hir::WherePredicate {
+                            hir_id: marker_hir_id,
+                            span: marker_span,
+                            kind: marker_kind,
+                        });
+
                         hir::TraitItemKind::Type(hir_bounds, None)
                     },
                 );

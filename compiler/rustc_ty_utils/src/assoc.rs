@@ -95,7 +95,21 @@ fn associated_item_from_trait_item(
             ty::AssocKind::Fn { name, has_self: fn_has_self_parameter(tcx, owner_id) }
         }
         hir::TraitItemKind::Type { .. } => {
-            ty::AssocKind::Type { data: ty::AssocTypeData::Normal(name) }
+            // Check for the marker predicate that distinguishes associated traits
+            // from associated types. Associated traits have a synthetic unit-typed
+            // predicate with no bounds in their generics.
+            let is_assoc_trait = trait_item.generics.predicates.iter().any(|pred| {
+                if let hir::WherePredicateKind::BoundPredicate(bp) = &pred.kind {
+                    matches!(bp.bounded_ty.kind, hir::TyKind::Tup(&[])) && bp.bounds.is_empty()
+                } else {
+                    false
+                }
+            });
+            if is_assoc_trait {
+                ty::AssocKind::Type { data: ty::AssocTypeData::Trait(name) }
+            } else {
+                ty::AssocKind::Type { data: ty::AssocTypeData::Normal(name) }
+            }
         }
     };
 
@@ -113,7 +127,15 @@ fn associated_item_from_impl_item(tcx: TyCtxt<'_>, impl_item: &hir::ImplItem<'_>
             ty::AssocKind::Fn { name, has_self: fn_has_self_parameter(tcx, owner_id) }
         }
         hir::ImplItemKind::Type { .. } => {
-            ty::AssocKind::Type { data: ty::AssocTypeData::Normal(name) }
+            // Check for associated trait marker: unit-typed placeholder type
+            // with non-empty generics predicates.
+            let is_assoc_trait = matches!(impl_item.kind, hir::ImplItemKind::Type(ty) if matches!(ty.kind, hir::TyKind::Tup(&[])))
+                && !impl_item.generics.predicates.is_empty();
+            if is_assoc_trait {
+                ty::AssocKind::Type { data: ty::AssocTypeData::Trait(name) }
+            } else {
+                ty::AssocKind::Type { data: ty::AssocTypeData::Normal(name) }
+            }
         }
     };
 
