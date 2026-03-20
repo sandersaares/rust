@@ -1,5 +1,5 @@
 trait Trait;
-//~^ ERROR expected `{}`, found `;`
+//~^ ERROR associated traits are experimental
 
 impl Trait for ();
 //~^ ERROR expected `{}`, found `;`

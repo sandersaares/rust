@@ -1172,10 +1172,10 @@ impl<'a> Parser<'a> {
                 generics.where_clause = self.parse_where_clause()?;
             }
             if self.token == TokenKind::Semi || self.token.kind == token::Eq {
-                // Associated trait: `trait Bar;` or `trait Bar: Clone;`
-                // or `trait Bar: Clone = Baz;` or `trait Bar = Baz;`
-                // The `=` form with colon bounds should only be valid for
-                // associated traits, not standalone trait aliases.
+                // This is either an associated trait (in trait/impl body, handled
+                // by parse_assoc_item) or a standalone incomplete trait.
+                // Gate it — the feature gate check will enforce this.
+                self.psess.gated_spans.gate(sym::associated_traits, ident.span);
                 let value =
                     if self.eat(exp!(Eq)) { self.parse_generic_bounds()? } else { Vec::new() };
                 let has_value = !value.is_empty();
@@ -1304,7 +1304,6 @@ impl<'a> Parser<'a> {
                                      use `trait Bar;` or `trait Bar = Send;`",
                                 );
                             }
-                            self.psess.gated_spans.gate(sym::associated_traits, span);
                             AssocItemKind::Trait(Box::new(AssocTraitItem {
                                 defaultness: Defaultness::Implicit,
                                 ident,

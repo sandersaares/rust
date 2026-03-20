@@ -3377,9 +3377,14 @@ impl<'a, 'ast, 'ra, 'tcx> LateResolutionVisitor<'a, 'ast, 'ra, 'tcx> {
                 None,
             );
             self.diag_metadata.currently_processing_impl_trait = None;
-            if let Some(def_id) = res.expect_full_res().opt_def_id() {
-                new_id = Some(def_id);
-                new_val = Some((self.r.expect_module(def_id), trait_ref.clone()));
+            if let Some(full_res) = res.full_res() {
+                if let Some(def_id) = full_res.opt_def_id() {
+                    new_id = Some(def_id);
+                    new_val = Some((self.r.expect_module(def_id), trait_ref.clone()));
+                }
+            } else if res.unresolved_segments() > 0 {
+                // Partial resolution (e.g., `Self::N`) — not a valid trait
+                // Fall through without setting new_id/new_val
             }
         }
         let original_trait_ref = replace(&mut self.current_trait_ref, new_val);
@@ -4706,9 +4711,7 @@ impl<'a, 'ast, 'ra, 'tcx> LateResolutionVisitor<'a, 'ast, 'ra, 'tcx> {
                     && partial_res.unresolved_segments() > 0
                     && matches!(
                         partial_res.base_res(),
-                        Res::Def(DefKind::TyParam, _)
-                            | Res::SelfTyParam { .. }
-                            | Res::SelfTyAlias { .. }
+                        Res::Def(DefKind::TyParam, _) | Res::SelfTyParam { .. }
                     ) =>
             {
                 partial_res
@@ -4841,7 +4844,7 @@ impl<'a, 'ast, 'ra, 'tcx> LateResolutionVisitor<'a, 'ast, 'ra, 'tcx> {
                 Some(&qself),
             );
 
-            if trait_res.expect_full_res() == Res::Err {
+            if trait_res.full_res() == Some(Res::Err) || trait_res.unresolved_segments() > 0 {
                 return Ok(Some(trait_res));
             }
 
