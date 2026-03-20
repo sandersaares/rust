@@ -668,6 +668,13 @@ fn project<'cx, 'tcx>(
         )));
     }
 
+    // Associated traits are not types — they should not participate in
+    // type projection normalization. Skip entirely.
+    if selcx.tcx().def_kind(obligation.predicate.def_id) == DefKind::AssocTrait {
+        let term = obligation.predicate.to_term(selcx.tcx());
+        return Ok(Projected::NoProgress(term));
+    }
+
     let mut candidates = ProjectionCandidateSet::None;
 
     // Make sure that the following procedures are kept in order. ParamEnv
@@ -2045,12 +2052,14 @@ fn confirm_impl_candidate<'cx, 'tcx>(
 
     let term = if obligation.predicate.kind(tcx).is_type() {
         // Associated traits don't have types — return unit type placeholder
-        // Associated traits don't have types. Return () as a projection
-        // placeholder — this path is hit during trait selection but the result
-        // is not used for type checking (associated trait bounds are handled
-        // through AssocTraitBound predicates instead).
+        // Associated traits should never reach confirm_impl_candidate —
+        // they are filtered out in project() with NoProgress.
         if tcx.def_kind(assoc_term.item.def_id) == DefKind::AssocTrait {
-            ty::EarlyBinder::bind(Ty::new_tup(tcx, &[]).into())
+            bug!(
+                "confirm_impl_candidate reached for associated trait `{}`; \
+                 project() should have returned NoProgress",
+                tcx.def_path_str(assoc_term.item.def_id),
+            );
         } else {
             tcx.type_of(assoc_term.item.def_id).map_bound(|ty| ty.into())
         }
