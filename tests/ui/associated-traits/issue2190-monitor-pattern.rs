@@ -1,5 +1,5 @@
 //@ check-pass
-// Kiiyya's Monitor pattern from RFC #2190.
+// Kiiyya's Monitor pattern from rust-lang/rfcs#2190.
 // Associated trait constrains what kind of monitors are acceptable.
 
 #![feature(associated_traits)]

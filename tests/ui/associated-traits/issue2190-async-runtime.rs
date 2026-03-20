@@ -1,6 +1,6 @@
 //@ check-pass
 //@ edition:2021
-// RFC #2190 async runtime agnosticism pattern (nihohit).
+// rust-lang/rfcs#2190 async runtime agnosticism pattern (nihohit).
 // Associated trait controls Send requirements for futures.
 
 #![feature(associated_traits)]

@@ -1,5 +1,5 @@
 //@ check-pass
-// Jezza's Component/UI pattern from RFC #2190.
+// Jezza's Component/UI pattern from rust-lang/rfcs#2190.
 // Traits for UI framework with associated event constraints.
 
 #![feature(associated_traits)]

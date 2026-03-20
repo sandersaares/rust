@@ -1,5 +1,5 @@
 //@ check-pass
-// RFC #2190 PointerFamily pattern (kennytm/AndreiCravtov).
+// rust-lang/rfcs#2190 PointerFamily pattern (kennytm/AndreiCravtov).
 // Associated traits restrict what types a GAT can accept.
 
 #![feature(associated_traits)]

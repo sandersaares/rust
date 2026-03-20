@@ -1,5 +1,5 @@
 //@ check-pass
-// RFC #2190 original example — the Handler pattern.
+// rust-lang/rfcs#2190 original example — the Handler pattern.
 // Tests the core motivating use case from the issue body.
 
 #![feature(associated_traits)]
