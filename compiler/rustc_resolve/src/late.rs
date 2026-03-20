@@ -4705,9 +4705,10 @@ impl<'a, 'ast, 'ra, 'tcx> LateResolutionVisitor<'a, 'ast, 'ra, 'tcx> {
             // For associated traits: `B: T::Bar` where `Bar` is an associated trait.
             // The path partially resolves (T resolves as a type param, Bar is unresolved).
             // Accept this and defer to type checking, similar to type position paths.
-            // Only accept when the base resolves to a type parameter, not Self or an error.
+            // Only accept for AliasPossibility::Maybe (bound positions like `B: T::Bar`),
+            // NOT for AliasPossibility::No (impl trait refs like `impl Foo for S`).
             Ok(Some(partial_res))
-                if matches!(source, PathSource::Trait(_))
+                if matches!(source, PathSource::Trait(AliasPossibility::Maybe))
                     && partial_res.unresolved_segments() > 0
                     && matches!(
                         partial_res.base_res(),
