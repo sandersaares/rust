@@ -1383,7 +1383,7 @@ pub fn walk_param_bound<'v, V: Visitor<'v>>(
             walk_list!(visitor, visit_precise_capturing_arg, args);
             V::Result::output()
         }
-        GenericBound::AssocTraitBound(ty, segment, _) => {
+        GenericBound::AssocTraitBound(ty, segment, _, _) => {
             try_visit!(visitor.visit_ty_unambig(ty));
             try_visit!(visitor.visit_path_segment(segment));
             V::Result::output()

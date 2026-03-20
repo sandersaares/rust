@@ -1201,6 +1201,41 @@ impl<'tcx> dyn HirTyLowerer<'tcx> + '_ {
         )
     }
 
+    /// Like `probe_single_ty_param_bound_for_assoc_item`, but constrained
+    /// to a specific trait. Used for UFCS associated trait bounds like
+    /// `<T as Trait>::AssocTrait` where the trait is known.
+    fn probe_single_ty_param_bound_for_assoc_item_constrained(
+        &self,
+        ty_param_def_id: LocalDefId,
+        ty_param_span: Span,
+        assoc_tag: ty::AssocTag,
+        assoc_ident: Ident,
+        span: Span,
+        constraint_trait: DefId,
+    ) -> Result<ty::PolyTraitRef<'tcx>, ErrorGuaranteed> {
+        debug!(?ty_param_def_id, ?assoc_ident, ?span, ?constraint_trait);
+        let tcx = self.tcx();
+
+        let predicates = &self.probe_ty_param_bounds(span, ty_param_def_id, assoc_ident);
+        debug!("predicates={:#?}", predicates);
+
+        self.probe_single_bound_for_assoc_item(
+            || {
+                let trait_refs = predicates
+                    .iter_identity_copied()
+                    .filter_map(|(p, _)| Some(p.as_trait_clause()?.map_bound(|t| t.trait_ref)));
+                // Filter to only the constraint trait and its supertraits
+                traits::transitive_bounds_that_define_assoc_item(tcx, trait_refs, assoc_ident)
+                    .filter(move |tr| tr.def_id() == constraint_trait)
+            },
+            AssocItemQSelf::TyParam(ty_param_def_id, ty_param_span),
+            assoc_tag,
+            assoc_ident,
+            span,
+            None,
+        )
+    }
+
     /// Search for a single trait bound whose trait defines the associated item given by
     /// `assoc_ident`.
     ///
@@ -1612,6 +1647,7 @@ impl<'tcx> dyn HirTyLowerer<'tcx> + '_ {
             qpath_hir_id,
             span,
             variant_def_id,
+            None,
         )?;
 
         let (item_def_id, args) = self.lower_assoc_item_path(span, item_def_id, segment, bound)?;
@@ -1647,6 +1683,7 @@ impl<'tcx> dyn HirTyLowerer<'tcx> + '_ {
         qpath_hir_id: HirId,
         span: Span,
         variant_def_id: Option<DefId>,
+        constraint_trait: Option<DefId>,
     ) -> Result<(DefId, ty::PolyTraitRef<'tcx>), ErrorGuaranteed> {
         let tcx = self.tcx();
 
@@ -1677,13 +1714,28 @@ impl<'tcx> dyn HirTyLowerer<'tcx> + '_ {
             (
                 &ty::Param(_),
                 Res::SelfTyParam { trait_: param_did } | Res::Def(DefKind::TyParam, param_did),
-            ) => self.probe_single_ty_param_bound_for_assoc_item(
-                param_did.expect_local(),
-                hir_self_ty.span,
-                assoc_tag,
-                segment.ident,
-                span,
-            )?,
+            ) => {
+                if let Some(trait_def_id) = constraint_trait {
+                    // UFCS: we know the specific trait. Directly construct
+                    // the trait ref instead of probing all bounds.
+                    self.probe_single_ty_param_bound_for_assoc_item_constrained(
+                        param_did.expect_local(),
+                        hir_self_ty.span,
+                        assoc_tag,
+                        segment.ident,
+                        span,
+                        trait_def_id,
+                    )?
+                } else {
+                    self.probe_single_ty_param_bound_for_assoc_item(
+                        param_did.expect_local(),
+                        hir_self_ty.span,
+                        assoc_tag,
+                        segment.ident,
+                        span,
+                    )?
+                }
+            }
             _ => {
                 return Err(self.report_unresolved_type_relative_path(
                     self_ty,

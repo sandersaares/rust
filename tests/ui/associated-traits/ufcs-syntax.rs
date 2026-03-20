@@ -34,8 +34,21 @@ where
     E: <T as Container>::Elem,
 {}
 
+// UFCS for disambiguation: T implements both traits with same-named assoc trait
+fn disambiguate<T: Container + OtherContainer, E>(_e: E)
+where
+    E: <T as Container>::Elem,
+{}
+
+fn disambiguate_other<T: Container + OtherContainer, E>(_e: E)
+where
+    E: <T as OtherContainer>::Elem,
+{}
+
 fn main() {
     use_container_elem::<MyContainer, i32>(42);
     use_other_elem::<MyContainer, String>(String::from("hello"));
     where_ufcs::<MyContainer, i32>(42);
+    disambiguate::<MyContainer, i32>(42);
+    disambiguate_other::<MyContainer, String>(String::from("hello"));
 }

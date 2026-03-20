@@ -2289,7 +2289,7 @@ impl<'a, 'tcx> BoundVarContext<'a, 'tcx> {
                                     }
                                     hir::GenericBound::Outlives(_)
                                     | hir::GenericBound::Use(_, _)
-                                    | hir::GenericBound::AssocTraitBound(_, _, _) => {}
+                                    | hir::GenericBound::AssocTraitBound(..) => {}
                                 }
                             }
                         }

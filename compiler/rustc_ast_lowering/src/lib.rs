@@ -1955,7 +1955,9 @@ impl<'a, 'hir> LoweringContext<'a, 'hir> {
                         );
                         if let hir::QPath::TypeRelative(ty, segment) = base_ty {
                             let span = self.lower_span(p.span);
-                            return hir::GenericBound::AssocTraitBound(ty, segment, span);
+                            return hir::GenericBound::AssocTraitBound(
+                                ty, segment, span, None,
+                            );
                         }
                     }
                 }
@@ -1987,7 +1989,25 @@ impl<'a, 'hir> LoweringContext<'a, 'hir> {
                             None,
                         ));
                         let span = self.lower_span(p.span);
-                        return hir::GenericBound::AssocTraitBound(base_ty, hir_segment, span);
+                        // Extract the constraint trait DefId from the
+                        // resolved path. For <T as Trait>::AssocTrait,
+                        // the trait is at path.segments[0..qself.position].
+                        let constraint_trait = {
+                            // The trait path is everything before qself.position.
+                            // Resolve it to get the trait DefId.
+                            let trait_seg = &p.trait_ref.path.segments
+                                [..qself.position];
+                            if let Some(first_seg) = trait_seg.first() {
+                                self.resolver
+                                    .get_partial_res(first_seg.id)
+                                    .and_then(|r| r.expect_full_res().opt_def_id())
+                            } else {
+                                None
+                            }
+                        };
+                        return hir::GenericBound::AssocTraitBound(
+                            base_ty, hir_segment, span, constraint_trait,
+                        );
                     }
                 }
 

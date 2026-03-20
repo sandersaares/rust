@@ -431,7 +431,7 @@ fn report_mismatched_rpitit_captures<'tcx>(
                 rustc_hir::GenericBound::Use(_, span) => Some(span),
                 hir::GenericBound::Trait(_)
                 | hir::GenericBound::Outlives(_)
-                | hir::GenericBound::AssocTraitBound(_, _, _) => None,
+                | hir::GenericBound::AssocTraitBound(..) => None,
             },
         )
     else {

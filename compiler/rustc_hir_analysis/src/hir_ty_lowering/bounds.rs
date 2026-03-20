@@ -410,8 +410,10 @@ impl<'tcx> dyn HirTyLowerer<'tcx> + '_ {
                 hir::GenericBound::Use(..) => {
                     // We don't actually lower `use` into the type layer.
                 }
-                hir::GenericBound::AssocTraitBound(qself_ty, segment, span) => {
-                    // Associated trait bound: `B: C::Elem`
+                hir::GenericBound::AssocTraitBound(
+                    qself_ty, segment, span, constraint_trait,
+                ) => {
+                    // Associated trait bound: `B: C::Elem` or `B: <C as Trait>::Elem`
                     // Lower the base type (C), find the associated trait item (Elem),
                     // and emit an AssocTraitBound predicate.
                     let tcx = self.tcx();
@@ -419,14 +421,17 @@ impl<'tcx> dyn HirTyLowerer<'tcx> + '_ {
 
                     // Use the existing type-relative path resolution to find the
                     // associated item DefId and the trait bound.
+                    // For UFCS (constraint_trait is Some), we need to constrain
+                    // the resolution to a specific trait.
                     let result = self.resolve_type_relative_path(
                         base_ty,
                         qself_ty,
-                        ty::AssocTag::Trait, // Associated traits have their own tag
+                        ty::AssocTag::Trait,
                         segment,
                         segment.hir_id,
                         *span,
                         None,
+                        *constraint_trait,
                     );
 
                     if let Ok((item_def_id, bound)) = result {
@@ -787,6 +792,7 @@ impl<'tcx> dyn HirTyLowerer<'tcx> + '_ {
                     segment,
                     hir_ty.hir_id,
                     hir_ty.span,
+                    None,
                     None,
                 ) {
                     Ok(result) => result,
