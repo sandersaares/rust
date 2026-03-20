@@ -1934,6 +1934,7 @@ impl<'a, 'hir> LoweringContext<'a, 'hir> {
                         partial_res.base_res(),
                         hir::def::Res::Def(hir::def::DefKind::TyParam, _)
                             | hir::def::Res::SelfTyParam { .. }
+                            | hir::def::Res::SelfTyAlias { .. }
                     )
                 {
                     // This is an associated trait bound like `B: C::Elem`.
