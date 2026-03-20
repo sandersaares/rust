@@ -1323,31 +1323,16 @@ impl<'hir> LoweringContext<'_, 'hir> {
                         i.id,
                         ImplTraitContext::Disallowed(ImplTraitPosition::Generic),
                         |this| {
-                            let bounds: Vec<hir::GenericBound<'_>> = if *has_value {
-                                value
-                                    .iter()
-                                    .filter_map(|bound| {
-                                        if let ast::GenericBound::Trait(ptr) = bound {
-                                            Some(hir::GenericBound::Trait(
-                                                this.lower_poly_trait_ref(
-                                                    ptr,
-                                                    RelaxedBoundPolicy::Forbidden(
-                                                        RelaxedBoundForbiddenReason::TraitObjectTy,
-                                                    ),
-                                                    ImplTraitContext::Disallowed(
-                                                        ImplTraitPosition::Generic,
-                                                    ),
-                                                ),
-                                            ))
-                                        } else {
-                                            None
-                                        }
-                                    })
-                                    .collect()
+                            let hir_bounds = if *has_value {
+                                this.lower_param_bounds(
+                                    value,
+                                    RelaxedBoundPolicy::Allowed,
+                                    ImplTraitContext::Disallowed(ImplTraitPosition::Generic),
+                                )
                             } else {
-                                Vec::new()
+                                &[]
                             };
-                            hir::ImplItemKind::Trait(this.arena.alloc_from_iter(bounds))
+                            hir::ImplItemKind::Trait(hir_bounds)
                         },
                     ),
                 )

@@ -1476,6 +1476,7 @@ impl Expr {
             ExprKind::Path(None, path) => Some(GenericBound::Trait(PolyTraitRef::new(
                 ThinVec::new(),
                 path.clone(),
+                None,
                 TraitBoundModifiers::NONE,
                 self.span,
                 Parens::No,
@@ -3489,6 +3490,8 @@ impl AttrItem {
 pub struct TraitRef {
     pub path: Path,
     pub ref_id: NodeId,
+    /// For qualified trait refs like `<T as Trait>::AssocTrait` in bound position.
+    pub qself: Option<Box<QSelf>>,
 }
 
 /// Whether enclosing parentheses are present or not.
@@ -3520,6 +3523,7 @@ impl PolyTraitRef {
     pub fn new(
         generic_params: ThinVec<GenericParam>,
         path: Path,
+        qself: Option<Box<QSelf>>,
         modifiers: TraitBoundModifiers,
         span: Span,
         parens: Parens,
@@ -3527,7 +3531,7 @@ impl PolyTraitRef {
         PolyTraitRef {
             bound_generic_params: generic_params,
             modifiers,
-            trait_ref: TraitRef { path, ref_id: DUMMY_NODE_ID },
+            trait_ref: TraitRef { path, ref_id: DUMMY_NODE_ID, qself },
             span,
             parens,
         }
@@ -4309,7 +4313,7 @@ mod size_asserts {
     static_assert_size!(ForeignItem, 80);
     static_assert_size!(ForeignItemKind, 16);
     static_assert_size!(GenericArg, 24);
-    static_assert_size!(GenericBound, 88);
+    static_assert_size!(GenericBound, 96);
     static_assert_size!(Generics, 40);
     static_assert_size!(Impl, 80);
     static_assert_size!(Item, 152);
@@ -4324,7 +4328,7 @@ mod size_asserts {
     static_assert_size!(PathSegment, 24);
     static_assert_size!(Stmt, 32);
     static_assert_size!(StmtKind, 16);
-    static_assert_size!(TraitImplHeader, 72);
+    static_assert_size!(TraitImplHeader, 80);
     static_assert_size!(Ty, 64);
     static_assert_size!(TyKind, 40);
     // tidy-alphabetical-end

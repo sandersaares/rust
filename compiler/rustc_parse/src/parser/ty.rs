@@ -572,6 +572,7 @@ impl<'a> Parser<'a> {
         let poly_trait_ref = PolyTraitRef::new(
             generic_params,
             path,
+            None,
             TraitBoundModifiers::NONE,
             lo.to(self.prev_token.span),
             parens,
@@ -1348,20 +1349,35 @@ impl<'a> Parser<'a> {
             self.dcx().emit_err(errors::BinderBeforeModifiers { binder_span, modifiers_span });
         }
 
-        let mut path = if self.token.is_keyword(kw::Fn)
+        let (mut path, qself) = if self.token.is_keyword(kw::Fn)
             && self.look_ahead(1, |t| *t == TokenKind::OpenParen)
             && let Some(path) = self.recover_path_from_fn()
         {
-            path
+            (path, None)
+        } else if self.token.is_qpath_start() {
+            // Handle UFCS qualified paths like `<T as Trait>::AssocTrait`
+            // in bound position for associated traits.
+            let ty = self.parse_ty_no_plus()?;
+            if let TyKind::Path(Some(_), _) = &ty.kind {
+                if let TyKind::Path(Some(qself), path) = (*ty).kind {
+                    (path, Some(qself))
+                } else {
+                    unreachable!()
+                }
+            } else {
+                let err =
+                    self.dcx().struct_span_err(ty.span, "expected a trait, found type");
+                return Err(err);
+            }
         } else if !self.token.is_path_start() && self.token.can_begin_type() {
             let ty = self.parse_ty_no_plus()?;
-            // Instead of finding a path (a trait), we found a type.
-            let mut err = self.dcx().struct_span_err(ty.span, "expected a trait, found type");
+            let ty_span = ty.span;
 
-            // If we can recover, try to extract a path from the type. Note
-            // that we do not use the try operator when parsing the type because
-            // if it fails then we get a parser error which we don't want (we're trying
-            // to recover from errors, not make more).
+            // Instead of finding a path (a trait), we found a type.
+            let mut err =
+                self.dcx().struct_span_err(ty_span, "expected a trait, found type");
+
+            // If we can recover, try to extract a path from the type.
             let path = if self.may_recover() {
                 let (span, message, sugg, path, applicability) = match &ty.kind {
                     TyKind::Ptr(..) | TyKind::Ref(..)
@@ -1390,17 +1406,15 @@ impl<'a> Parser<'a> {
                 };
 
                 err.span_suggestion_verbose(span, message, sugg, applicability);
-
                 path.clone()
             } else {
                 return Err(err);
             };
 
             err.emit();
-
-            path
+            (path, None)
         } else {
-            self.parse_path(PathStyle::Type)?
+            (self.parse_path(PathStyle::Type)?, None)
         };
 
         if self.may_recover() && self.token == TokenKind::OpenParen {
@@ -1427,7 +1441,7 @@ impl<'a> Parser<'a> {
         }
 
         let poly_trait =
-            PolyTraitRef::new(bound_vars, path, modifiers, lo.to(self.prev_token.span), parens);
+            PolyTraitRef::new(bound_vars, path, qself, modifiers, lo.to(self.prev_token.span), parens);
         Ok(GenericBound::Trait(poly_trait))
     }
 

@@ -1302,7 +1302,7 @@ impl<'a, 'hir> LoweringContext<'a, 'hir> {
                     &PolyTraitRef {
                         bound_generic_params: ThinVec::new(),
                         modifiers: TraitBoundModifiers::NONE,
-                        trait_ref: TraitRef { path: path.clone(), ref_id: t.id },
+                        trait_ref: TraitRef { path: path.clone(), ref_id: t.id, qself: None },
                         span: t.span,
                         parens: ast::Parens::No,
                     },
@@ -1959,6 +1959,38 @@ impl<'a, 'hir> LoweringContext<'a, 'hir> {
                         }
                     }
                 }
+
+                // Check if this is a UFCS associated trait bound like
+                // `B: <T as Trait>::AssocTrait`. In this case the resolver
+                // fully resolves it (unresolved_segments = 0) with the qself
+                // stored in the TraitRef.
+                if let Some(qself) = &p.trait_ref.qself {
+                    if let Some(partial_res) = res
+                        && matches!(
+                            partial_res.base_res(),
+                            hir::def::Res::Def(hir::def::DefKind::AssocTrait, _)
+                        )
+                    {
+                        // Lower the qself type (e.g., T in <T as Trait>::AssocTrait)
+                        let base_ty = self.lower_ty_alloc(
+                            &qself.ty,
+                            ImplTraitContext::Disallowed(ImplTraitPosition::Path),
+                        );
+                        // Lower the last segment (the associated trait name)
+                        let last_seg = p.trait_ref.path.segments.last().unwrap();
+                        let hir_segment = self.arena.alloc(self.lower_path_segment(
+                            p.span,
+                            last_seg,
+                            ParamMode::Explicit,
+                            GenericArgsMode::Err,
+                            itctx,
+                            None,
+                        ));
+                        let span = self.lower_span(p.span);
+                        return hir::GenericBound::AssocTraitBound(base_ty, hir_segment, span);
+                    }
+                }
+
                 hir::GenericBound::Trait(self.lower_poly_trait_ref(p, rbp, itctx))
             }
             GenericBound::Outlives(lifetime) => hir::GenericBound::Outlives(self.lower_lifetime(

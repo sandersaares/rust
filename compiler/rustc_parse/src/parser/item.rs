@@ -735,7 +735,7 @@ impl<'a> Parser<'a> {
                         }
                     }
                 };
-                let trait_ref = TraitRef { path, ref_id: ty_first.id };
+                let trait_ref = TraitRef { path, ref_id: ty_first.id, qself: None };
 
                 let of_trait =
                     Some(Box::new(TraitImplHeader { defaultness, safety, polarity, trait_ref }));

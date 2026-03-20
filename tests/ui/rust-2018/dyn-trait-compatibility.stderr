@@ -9,11 +9,11 @@ help: escape `dyn` to use it as an identifier
 LL | type A1 = dyn::r#dyn;
    |                ++
 
-error: expected identifier, found `<`
-  --> $DIR/dyn-trait-compatibility.rs:5:14
+error: expected one of `!`, `(`, `>`, `?`, `[`, `as`, `async`, `const`, `for`, `use`, `~`, lifetime, or path, found `,`
+  --> $DIR/dyn-trait-compatibility.rs:5:18
    |
 LL | type A2 = dyn<dyn, dyn>;
-   |              ^ expected identifier
+   |                  ^ expected one of 13 possible tokens
 
 error: aborting due to 2 previous errors
 

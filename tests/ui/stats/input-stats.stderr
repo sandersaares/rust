@@ -28,8 +28,8 @@ ast-stats - Struct                    80 (NN.N%)             1
 ast-stats - Wild                      80 (NN.N%)             1
 ast-stats - Ident                    400 (NN.N%)             5
 ast-stats GenericParam             480 (NN.N%)             5            96
-ast-stats GenericBound             352 (NN.N%)             4            88
-ast-stats - Trait                    352 (NN.N%)             4
+ast-stats GenericBound             384 (NN.N%)             4            96
+ast-stats - Trait                    384 (NN.N%)             4
 ast-stats AssocItem                320 (NN.N%)             4            80
 ast-stats - Fn                       160 (NN.N%)             2
 ast-stats - Type                     160 (NN.N%)             2
@@ -57,7 +57,7 @@ ast-stats GenericArgs               40 (NN.N%)             1            40
 ast-stats - AngleBracketed            40 (NN.N%)             1
 ast-stats Crate                     40 (NN.N%)             1            40
 ast-stats ----------------------------------------------------------------
-ast-stats Total                  7_560                   127
+ast-stats Total                  7_592                   127
 ast-stats ================================================================
 hir-stats ================================================================
 hir-stats HIR STATS: input_stats

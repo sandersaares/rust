@@ -570,7 +570,10 @@ impl PathSource<'_, '_, '_> {
             ),
             PathSource::Trait(AliasPossibility::No) => matches!(res, Res::Def(DefKind::Trait, _)),
             PathSource::Trait(AliasPossibility::Maybe) => {
-                matches!(res, Res::Def(DefKind::Trait | DefKind::TraitAlias, _))
+                matches!(
+                    res,
+                    Res::Def(DefKind::Trait | DefKind::TraitAlias | DefKind::AssocTrait, _)
+                )
             }
             PathSource::Expr(..) => matches!(
                 res,
@@ -609,6 +612,7 @@ impl PathSource<'_, '_, '_> {
             PathSource::TraitItem(ns, _) => match res {
                 Res::Def(DefKind::AssocConst { .. } | DefKind::AssocFn, _) if ns == ValueNS => true,
                 Res::Def(DefKind::AssocTy, _) if ns == TypeNS => true,
+                Res::Def(DefKind::AssocTrait, _) if ns == TypeNS => true,
                 _ => false,
             },
             PathSource::ReturnTypeNotation => match res {
@@ -1005,7 +1009,7 @@ impl<'ast, 'ra, 'tcx> Visitor<'ast> for LateResolutionVisitor<'_, 'ast, 'ra, 'tc
                 this.visit_generic_params(&tref.bound_generic_params, false);
                 this.smart_resolve_path(
                     tref.trait_ref.ref_id,
-                    &None,
+                    &tref.trait_ref.qself,
                     &tref.trait_ref.path,
                     PathSource::Trait(AliasPossibility::Maybe),
                 );

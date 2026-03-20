@@ -47,11 +47,11 @@ LL | fn foo3(_: &dyn {Drop + AsRef<str>}) {}
    |                |
    |                help: missing `,`
 
-error: expected identifier, found `<`
-  --> $DIR/trait-object-delimiters.rs:14:17
+error: expected `::`, found `)`
+  --> $DIR/trait-object-delimiters.rs:14:36
    |
 LL | fn foo4(_: &dyn <Drop + AsRef<str>>) {}
-   |                 ^ expected identifier
+   |                                    ^ expected `::`
 
 error: invalid `dyn` keyword
   --> $DIR/trait-object-delimiters.rs:16:25
