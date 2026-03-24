@@ -1365,8 +1365,7 @@ impl<'a> Parser<'a> {
                     unreachable!()
                 }
             } else {
-                let err =
-                    self.dcx().struct_span_err(ty.span, "expected a trait, found type");
+                let err = self.dcx().struct_span_err(ty.span, "expected a trait, found type");
                 return Err(err);
             }
         } else if !self.token.is_path_start() && self.token.can_begin_type() {
@@ -1374,8 +1373,7 @@ impl<'a> Parser<'a> {
             let ty_span = ty.span;
 
             // Instead of finding a path (a trait), we found a type.
-            let mut err =
-                self.dcx().struct_span_err(ty_span, "expected a trait, found type");
+            let mut err = self.dcx().struct_span_err(ty_span, "expected a trait, found type");
 
             // If we can recover, try to extract a path from the type.
             let path = if self.may_recover() {
@@ -1440,8 +1438,14 @@ impl<'a> Parser<'a> {
             }
         }
 
-        let poly_trait =
-            PolyTraitRef::new(bound_vars, path, qself, modifiers, lo.to(self.prev_token.span), parens);
+        let poly_trait = PolyTraitRef::new(
+            bound_vars,
+            path,
+            qself,
+            modifiers,
+            lo.to(self.prev_token.span),
+            parens,
+        );
         Ok(GenericBound::Trait(poly_trait))
     }
 

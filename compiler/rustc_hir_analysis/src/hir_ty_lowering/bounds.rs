@@ -410,9 +410,7 @@ impl<'tcx> dyn HirTyLowerer<'tcx> + '_ {
                 hir::GenericBound::Use(..) => {
                     // We don't actually lower `use` into the type layer.
                 }
-                hir::GenericBound::AssocTraitBound(
-                    qself_ty, segment, span, constraint_trait,
-                ) => {
+                hir::GenericBound::AssocTraitBound(qself_ty, segment, span, constraint_trait) => {
                     // Associated trait bound: `B: C::Elem` or `B: <C as Trait>::Elem`
                     // Lower the base type (C), find the associated trait item (Elem),
                     // and emit an AssocTraitBound predicate.
