@@ -49,24 +49,34 @@ where
 
         // Structurally normalize the lhs.
         let lhs = if let Some(alias) = lhs.to_alias_term() {
-            let term = self.next_term_infer_of_kind(lhs);
-            self.add_goal(
-                GoalSource::TypeRelating,
-                goal.with(cx, ty::NormalizesTo { alias, term }),
-            );
-            term
+            // Associated trait projections are rigid — skip normalization.
+            if let ty::AliasTermKind::ProjectionTrait = alias.kind(cx) {
+                lhs
+            } else {
+                let term = self.next_term_infer_of_kind(lhs);
+                self.add_goal(
+                    GoalSource::TypeRelating,
+                    goal.with(cx, ty::NormalizesTo { alias, term }),
+                );
+                term
+            }
         } else {
             lhs
         };
 
         // Structurally normalize the rhs.
         let rhs = if let Some(alias) = rhs.to_alias_term() {
-            let term = self.next_term_infer_of_kind(rhs);
-            self.add_goal(
-                GoalSource::TypeRelating,
-                goal.with(cx, ty::NormalizesTo { alias, term }),
-            );
-            term
+            // Associated trait projections are rigid — skip normalization.
+            if let ty::AliasTermKind::ProjectionTrait = alias.kind(cx) {
+                rhs
+            } else {
+                let term = self.next_term_infer_of_kind(rhs);
+                self.add_goal(
+                    GoalSource::TypeRelating,
+                    goal.with(cx, ty::NormalizesTo { alias, term }),
+                );
+                term
+            }
         } else {
             rhs
         };

@@ -345,7 +345,11 @@ where
         param_env: I::ParamEnv,
         term: I::Term,
     ) -> Result<I::Term, NoSolution> {
-        if let Some(_) = term.to_alias_term() {
+        if let Some(alias) = term.to_alias_term() {
+            // Associated trait projections are rigid — they cannot be normalized.
+            if let ty::AliasTermKind::ProjectionTrait = alias.kind(self.cx()) {
+                return Ok(term);
+            }
             let normalized_term = self.next_term_infer_of_kind(term);
             let alias_relate_goal = Goal::new(
                 self.cx(),
