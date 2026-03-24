@@ -82,7 +82,8 @@ impl DocFolder for Stripper<'_, '_> {
             clean::MethodItem(..)
             | clean::ProvidedAssocConstItem(..)
             | clean::ImplAssocConstItem(..)
-            | clean::AssocTypeItem(..) => {
+            | clean::AssocTypeItem(..)
+            | clean::AssocTraitItem(..) => {
                 let item_id = i.item_id;
                 if item_id.is_local()
                     && !self.effective_visibilities.is_reachable(self.tcx, item_id.expect_def_id())
@@ -123,7 +124,8 @@ impl DocFolder for Stripper<'_, '_> {
             // tymethods etc. have no control over privacy
             clean::RequiredMethodItem(..)
             | clean::RequiredAssocConstItem(..)
-            | clean::RequiredAssocTypeItem(..) => {}
+            | clean::RequiredAssocTypeItem(..)
+            | clean::RequiredAssocTraitItem(..) => {}
 
             // Proc-macros are always public
             clean::ProcMacroItem(..) => {}

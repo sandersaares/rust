@@ -381,6 +381,8 @@ impl DocFolder for CacheBuilder<'_, '_> {
             | clean::ImplAssocConstItem(..)
             | clean::RequiredAssocTypeItem(..)
             | clean::AssocTypeItem(..)
+            | clean::RequiredAssocTraitItem(..)
+            | clean::AssocTraitItem(..)
             | clean::StrippedItem(..)
             | clean::KeywordItem
             | clean::AttributeItem => {

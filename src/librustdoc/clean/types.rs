@@ -915,6 +915,11 @@ pub(crate) enum ItemKind {
     RequiredAssocTypeItem(Generics, Vec<GenericBound>),
     /// An associated type in a trait impl or a provided one in a trait declaration.
     AssocTypeItem(Box<TypeAlias>, Vec<GenericBound>),
+    /// A required associated trait in a trait declaration (e.g., `trait Elem;` or `trait Elem: Clone;`).
+    RequiredAssocTraitItem(Generics, Vec<GenericBound>),
+    /// An associated trait in a trait impl or a provided one in a trait declaration
+    /// (e.g., `trait Elem = Send;`). Has generics, declaration bounds, and value bounds.
+    AssocTraitItem(Generics, Vec<GenericBound>, Vec<GenericBound>),
     /// An item that has been stripped by a rustdoc pass
     StrippedItem(Box<ItemKind>),
     /// This item represents a module with a `#[doc(keyword = "...")]` attribute which is used
@@ -962,6 +967,8 @@ impl ItemKind {
             | ImplAssocConstItem(..)
             | RequiredAssocTypeItem(..)
             | AssocTypeItem(..)
+            | RequiredAssocTraitItem(..)
+            | AssocTraitItem(..)
             | StrippedItem(_)
             | KeywordItem
             | AttributeItem => [].iter(),
@@ -2430,8 +2437,8 @@ mod size_asserts {
     static_assert_size!(GenericParamDef, 40);
     static_assert_size!(Generics, 16);
     static_assert_size!(Item, 8);
-    static_assert_size!(ItemInner, 144);
-    static_assert_size!(ItemKind, 48);
+    static_assert_size!(ItemInner, 160);
+    static_assert_size!(ItemKind, 64);
     static_assert_size!(PathSegment, 32);
     static_assert_size!(Type, 32);
     // tidy-alphabetical-end

@@ -336,6 +336,16 @@ fn from_clean_item(item: &clean::Item, renderer: &JsonRenderer<'_>) -> ItemEnum 
             bounds: b.into_json(renderer),
             type_: Some(t.item_type.as_ref().unwrap_or(&t.type_).into_json(renderer)),
         },
+        RequiredAssocTraitItem(g, b) => ItemEnum::AssocType {
+            generics: g.into_json(renderer),
+            bounds: b.into_json(renderer),
+            type_: None,
+        },
+        AssocTraitItem(g, decl_bounds, _value_bounds) => ItemEnum::AssocType {
+            generics: g.into_json(renderer),
+            bounds: decl_bounds.into_json(renderer),
+            type_: None,
+        },
         // `convert_item` early returns `None` for stripped items, keywords and attributes.
         KeywordItem | AttributeItem => unreachable!(),
         StrippedItem(inner) => {

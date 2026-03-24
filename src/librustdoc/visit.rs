@@ -49,6 +49,8 @@ pub(crate) trait DocVisitor<'a>: Sized {
             | ImplAssocConstItem(..)
             | RequiredAssocTypeItem(..)
             | AssocTypeItem(..)
+            | RequiredAssocTraitItem(..)
+            | AssocTraitItem(..)
             | KeywordItem
             | AttributeItem => {}
         }

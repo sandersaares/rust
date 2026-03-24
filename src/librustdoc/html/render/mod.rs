@@ -1097,6 +1097,38 @@ fn assoc_type(
     })
 }
 
+fn assoc_trait(
+    it: &clean::Item,
+    generics: &clean::Generics,
+    bounds: &[clean::GenericBound],
+    value_bounds: Option<&Vec<clean::GenericBound>>,
+    link: AssocItemLink<'_>,
+    indent: usize,
+    cx: &Context<'_>,
+) -> impl fmt::Display {
+    fmt::from_fn(move |w| {
+        render_attributes_in_code(w, it, &" ".repeat(indent), cx)?;
+        write!(
+            w,
+            "{indent}{vis}trait <a{href} class=\"associatedtype\">{name}</a>{generics}",
+            indent = " ".repeat(indent),
+            vis = visibility_print_with_space(it, cx),
+            href = assoc_href_attr(it, link, cx).maybe_display(),
+            name = it.name.as_ref().unwrap(),
+            generics = print_generics(generics, cx),
+        )?;
+        if !bounds.is_empty() {
+            write!(w, ": {}", print_generic_bounds(bounds, cx))?;
+        }
+        if let Some(value_bounds) = value_bounds {
+            if !value_bounds.is_empty() {
+                write!(w, " = {}", print_generic_bounds(value_bounds, cx))?;
+            }
+        }
+        write!(w, "{}", print_where_clause(generics, cx, indent, Ending::NoNewline).maybe_display())
+    })
+}
+
 fn assoc_method(
     meth: &clean::Item,
     g: &clean::Generics,
@@ -1313,6 +1345,26 @@ fn render_assoc_item(
             &ty.generics,
             bounds,
             Some(ty.item_type.as_ref().unwrap_or(&ty.type_)),
+            link,
+            if parent == ItemType::Trait { 4 } else { 0 },
+            cx,
+        )
+        .fmt(f),
+        clean::RequiredAssocTraitItem(generics, bounds) => assoc_trait(
+            item,
+            generics,
+            bounds,
+            None,
+            link,
+            if parent == ItemType::Trait { 4 } else { 0 },
+            cx,
+        )
+        .fmt(f),
+        clean::AssocTraitItem(generics, decl_bounds, value_bounds) => assoc_trait(
+            item,
+            generics,
+            decl_bounds,
+            Some(value_bounds),
             link,
             if parent == ItemType::Trait { 4 } else { 0 },
             cx,
@@ -2008,6 +2060,58 @@ fn render_impl(
                         ),
                     )?;
                 }
+                clean::RequiredAssocTraitItem(generics, bounds) => {
+                    let source_id = format!("{item_type}.{name}");
+                    let id = cx.derive_id(&source_id);
+                    write!(
+                        w,
+                        "<section id=\"{id}\" class=\"{item_type}{in_trait_class}{deprecation_class}\">\
+                            {}",
+                        render_rightside(cx, item, render_mode),
+                    )?;
+                    if trait_.is_some() {
+                        write!(w, "<a href=\"#{id}\" class=\"anchor\">§</a>")?;
+                    }
+                    write!(
+                        w,
+                        "<h4 class=\"code-header\">{}</h4></section>",
+                        assoc_trait(
+                            item,
+                            generics,
+                            bounds,
+                            None,
+                            link.anchor(if trait_.is_some() { &source_id } else { &id }),
+                            0,
+                            cx,
+                        ),
+                    )?;
+                }
+                clean::AssocTraitItem(generics, _decl_bounds, value_bounds) => {
+                    let source_id = format!("{item_type}.{name}");
+                    let id = cx.derive_id(&source_id);
+                    write!(
+                        w,
+                        "<section id=\"{id}\" class=\"{item_type}{in_trait_class}{deprecation_class}\">\
+                            {}",
+                        render_rightside(cx, item, render_mode),
+                    )?;
+                    if trait_.is_some() {
+                        write!(w, "<a href=\"#{id}\" class=\"anchor\">§</a>")?;
+                    }
+                    write!(
+                        w,
+                        "<h4 class=\"code-header\">{}</h4></section>",
+                        assoc_trait(
+                            item,
+                            generics,
+                            &[],
+                            Some(value_bounds),
+                            link.anchor(if trait_.is_some() { &source_id } else { &id }),
+                            0,
+                            cx,
+                        ),
+                    )?;
+                }
                 clean::StrippedItem(..) => return Ok(()),
                 _ => panic!("can't make docs for trait item with name {:?}", item.name),
             }
@@ -2041,9 +2145,10 @@ fn render_impl(
                     clean::MethodItem(..) | clean::RequiredMethodItem(..) => {
                         methods.push(impl_item)
                     }
-                    clean::RequiredAssocTypeItem(..) | clean::AssocTypeItem(..) => {
-                        assoc_types.push(impl_item)
-                    }
+                    clean::RequiredAssocTypeItem(..)
+                    | clean::AssocTypeItem(..)
+                    | clean::RequiredAssocTraitItem(..)
+                    | clean::AssocTraitItem(..) => assoc_types.push(impl_item),
                     clean::RequiredAssocConstItem(..)
                     | clean::ProvidedAssocConstItem(_)
                     | clean::ImplAssocConstItem(_) => {

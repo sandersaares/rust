@@ -1254,7 +1254,7 @@ fn clean_trait_item<'tcx>(trait_item: &hir::TraitItem<'tcx>, cx: &mut DocContext
             hir::TraitItemKind::Trait(bounds) => {
                 let generics = enter_impl_trait(cx, |cx| clean_generics(trait_item.generics, cx));
                 let bounds = bounds.iter().filter_map(|x| clean_generic_bound(x, cx)).collect();
-                RequiredAssocTypeItem(generics, bounds)
+                RequiredAssocTraitItem(generics, bounds)
             }
         };
         Item::from_def_id_and_parts(local_did, Some(trait_item.ident.name), inner, cx)
@@ -1298,8 +1298,9 @@ pub(crate) fn clean_impl_item<'tcx>(
             }
             hir::ImplItemKind::Trait(hir_bounds) => {
                 let generics = clean_generics(impl_.generics, cx);
-                let bounds = hir_bounds.iter().filter_map(|x| clean_generic_bound(x, cx)).collect();
-                RequiredAssocTypeItem(generics, bounds)
+                let bounds: Vec<GenericBound> =
+                    hir_bounds.iter().filter_map(|x| clean_generic_bound(x, cx)).collect();
+                AssocTraitItem(generics, Vec::new(), bounds)
             }
         };
 
@@ -1382,7 +1383,105 @@ pub(crate) fn clean_middle_assoc_item(assoc_item: &ty::AssocItem, cx: &mut DocCo
                 RequiredMethodItem(item, defaultness)
             }
         }
-        ty::AssocKind::Type { .. } | ty::AssocKind::Trait { .. } => {
+        ty::AssocKind::Trait { .. } => {
+            let mut predicates = tcx.explicit_predicates_of(assoc_item.def_id).predicates;
+            if let ty::AssocContainer::Trait = assoc_item.container {
+                let bounds = tcx.explicit_item_bounds(assoc_item.def_id).iter_identity_copied();
+                predicates = tcx.arena.alloc_from_iter(bounds.chain(predicates.iter().copied()));
+            }
+            let mut generics = clean_ty_generics_inner(
+                cx,
+                tcx.generics_of(assoc_item.def_id),
+                ty::GenericPredicates { parent: None, predicates },
+            );
+            simplify::move_bounds_to_generic_parameters(&mut generics);
+
+            if let ty::AssocContainer::Trait = assoc_item.container {
+                let mut bounds: Vec<GenericBound> = Vec::new();
+                generics.where_predicates.retain_mut(|pred| match *pred {
+                    WherePredicate::BoundPredicate {
+                        ty:
+                            QPath(box QPathData {
+                                ref assoc,
+                                ref self_type,
+                                trait_: Some(ref trait_),
+                                ..
+                            }),
+                        bounds: ref mut pred_bounds,
+                        ..
+                    } => {
+                        if assoc.name != assoc_item.name()
+                            || trait_.def_id() != assoc_item.container_id(tcx)
+                            || *self_type != SelfTy
+                        {
+                            return true;
+                        }
+                        bounds.extend(mem::take(pred_bounds));
+                        false
+                    }
+                    _ => true,
+                });
+                bounds.retain(|b| !b.is_meta_sized_bound(cx));
+                // Remove Sized bounds for associated traits — they're not meaningful.
+                bounds.retain(|b| !b.is_sized_bound(cx));
+
+                if tcx.defaultness(assoc_item.def_id).has_value() {
+                    // Associated trait with default value in trait definition.
+                    let value_bounds = tcx
+                        .explicit_item_bounds(assoc_item.def_id)
+                        .iter_identity_copied()
+                        .filter_map(|(clause, _)| {
+                            if let Some(trait_pred) = clause.as_trait_clause() {
+                                let trait_ref = trait_pred.skip_binder().trait_ref;
+                                Some(clean_trait_ref_with_constraints(
+                                    cx,
+                                    ty::Binder::dummy(trait_ref),
+                                    ThinVec::new(),
+                                ))
+                            } else {
+                                None
+                            }
+                        })
+                        .map(|path| {
+                            GenericBound::TraitBound(
+                                PolyTrait { trait_: path, generic_params: Vec::new() },
+                                hir::TraitBoundModifiers::NONE,
+                            )
+                        })
+                        .collect();
+                    AssocTraitItem(generics, bounds, value_bounds)
+                } else {
+                    RequiredAssocTraitItem(generics, bounds)
+                }
+            } else {
+                // Associated trait in an impl — extract value bounds.
+                let generics = clean_ty_generics(cx, assoc_item.def_id);
+                let value_bounds: Vec<GenericBound> = tcx
+                    .explicit_item_bounds(assoc_item.def_id)
+                    .iter_identity_copied()
+                    .filter_map(|(clause, _)| {
+                        if let Some(trait_pred) = clause.as_trait_clause() {
+                            let trait_ref = trait_pred.skip_binder().trait_ref;
+                            Some(clean_trait_ref_with_constraints(
+                                cx,
+                                ty::Binder::dummy(trait_ref),
+                                ThinVec::new(),
+                            ))
+                        } else {
+                            None
+                        }
+                    })
+                    .map(|path| {
+                        GenericBound::TraitBound(
+                            PolyTrait { trait_: path, generic_params: Vec::new() },
+                            hir::TraitBoundModifiers::NONE,
+                        )
+                    })
+                    .collect();
+                AssocTraitItem(generics, Vec::new(), value_bounds)
+            }
+        }
+        ty::AssocKind::Type { .. } => {
             let my_name = assoc_item.name();
 
             fn param_eq_arg(param: &GenericParamDef, arg: &GenericArg) -> bool {
