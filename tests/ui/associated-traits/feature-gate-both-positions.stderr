@@ -1,8 +1,8 @@
 error[E0658]: associated traits are experimental
-  --> $DIR/feature-gate-both-positions.rs:7:11
+  --> $DIR/feature-gate-both-positions.rs:7:5
    |
 LL |     trait Bar;
-   |           ^^^
+   |     ^^^^^^^^^^
    |
    = note: see issue #99999 <https://github.com/rust-lang/rust/issues/99999> for more information
    = help: add `#![feature(associated_traits)]` to the crate attributes to enable

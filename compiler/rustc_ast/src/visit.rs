@@ -854,6 +854,8 @@ macro_rules! common_visitor_and_walkers {
                         visit_visitable!($($mut)? vis, constness, ident, generics);
                         visit_visitable_with!($($mut)? vis, bounds, BoundKind::Bound)
                     }
+                    ItemKind::AssocTrait(assoc_trait) =>
+                        visit_visitable!($($mut)? vis, assoc_trait),
                     ItemKind::MacCall(m) =>
                         visit_visitable!($($mut)? vis, m),
                     ItemKind::MacroDef(ident, def) =>

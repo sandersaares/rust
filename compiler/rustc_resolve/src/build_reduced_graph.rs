@@ -882,7 +882,8 @@ impl<'a, 'ra, 'tcx> BuildReducedGraphVisitor<'a, 'ra, 'tcx> {
 
             // These items live in the type namespace.
             ItemKind::TyAlias(box TyAlias { ident, .. })
-            | ItemKind::TraitAlias(box TraitAlias { ident, .. }) => {
+            | ItemKind::TraitAlias(box TraitAlias { ident, .. })
+            | ItemKind::AssocTrait(box ast::AssocTraitItem { ident, .. }) => {
                 self.r.define_local(parent, ident, TypeNS, res, vis, sp, expansion);
             }
 

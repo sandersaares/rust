@@ -2999,6 +2999,12 @@ impl<'a, 'ast, 'ra, 'tcx> LateResolutionVisitor<'a, 'ast, 'ra, 'tcx> {
 
             ItemKind::ExternCrate(..) => {}
 
+            ItemKind::AssocTrait(..) => {
+                // Associated traits are resolved via AssocItemKind::Trait in the
+                // trait/impl context. If we get here, just walk the item.
+                visit::walk_item(self, item);
+            }
+
             ItemKind::MacCall(_) | ItemKind::DelegationMac(..) => {
                 panic!("unexpanded macro in resolve!")
             }
@@ -5574,7 +5580,8 @@ impl<'ast> Visitor<'ast> for ItemInfoCollector<'_, '_, '_> {
             | ItemKind::Union(_, generics, _)
             | ItemKind::Impl(Impl { generics, .. })
             | ItemKind::Trait(box Trait { generics, .. })
-            | ItemKind::TraitAlias(box TraitAlias { generics, .. }) => {
+            | ItemKind::TraitAlias(box TraitAlias { generics, .. })
+            | ItemKind::AssocTrait(box AssocTraitItem { generics, .. }) => {
                 if let ItemKind::Fn(box Fn { sig, .. }) = &item.kind {
                     self.collect_fn_info(sig.header, &sig.decl, item.id, &item.attrs);
                 }

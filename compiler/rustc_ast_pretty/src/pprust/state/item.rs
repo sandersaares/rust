@@ -411,6 +411,31 @@ impl<'a> State<'a> {
                 self.end(ib);
                 self.end(cb);
             }
+            ast::ItemKind::AssocTrait(box ast::AssocTraitItem {
+                ident,
+                generics,
+                bounds,
+                value,
+                ..
+            }) => {
+                let (cb, ib) = self.head("");
+                self.print_visibility(&item.vis);
+                self.word_nbsp("trait");
+                self.print_ident(*ident);
+                self.print_generic_params(&generics.params);
+                if !bounds.is_empty() {
+                    self.word_nbsp(":");
+                    self.print_type_bounds(bounds);
+                }
+                if !value.is_empty() {
+                    self.nbsp();
+                    self.word_nbsp("=");
+                    self.print_type_bounds(value);
+                }
+                self.word(";");
+                self.end(ib);
+                self.end(cb);
+            }
             ast::ItemKind::MacCall(mac) => {
                 self.print_mac(mac);
                 if mac.args.need_semicolon() {

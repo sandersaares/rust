@@ -278,8 +278,18 @@ impl<'a> Parser<'a> {
             let mutability = self.parse_mutability();
             self.parse_static_item(safety, mutability)?
         } else if self.check_keyword_case(exp!(Trait), case) || self.check_trait_front_matter() {
-            // TRAIT ITEM
-            self.parse_item_trait(attrs, lo)?
+            // TRAIT ITEM or ASSOCIATED TRAIT ITEM
+            // In associated context (trait/impl body), a plain `trait Foo` is an
+            // associated trait. Prefixed forms (const/unsafe/auto trait) are standalone
+            // trait definitions handled by parse_item_trait (and rejected later).
+            if matches!(fn_parse_mode.context, FnContext::Trait | FnContext::Impl)
+                && self.check_keyword_case(exp!(Trait), case)
+            {
+                self.bump(); // eat `trait`
+                self.parse_assoc_trait_item(def_())?
+            } else {
+                self.parse_item_trait(attrs, lo)?
+            }
         } else if self.check_impl_frontmatter(0) {
             // IMPL ITEM
             self.parse_item_impl(attrs, def_(), false)?
@@ -1120,17 +1130,10 @@ impl<'a> Parser<'a> {
 
         // Parse optional colon and supertrait bounds.
         let had_colon = self.eat(exp!(Colon));
-        let span_at_colon = self.prev_token.span;
         let bounds = if had_colon { self.parse_generic_bounds()? } else { Vec::new() };
 
-        let span_before_eq = self.prev_token.span;
         if self.eat(exp!(Eq)) {
-            // It's a trait alias (or an associated trait with bounds and value).
-            // For standalone trait aliases, bounds before `=` are not allowed.
-            // For associated traits (detected later by parse_assoc_item),
-            // bounds represent declaration bounds (e.g., `trait Bar: Clone = Send;`).
-            // We store the colon bounds in `generics` and the value bounds in `bounds`.
-            let colon_bounds = bounds;
+            // It's a trait alias.
             let value_bounds = self.parse_generic_bounds()?;
             generics.where_clause = self.parse_where_clause()?;
             self.expect_semi()?;
@@ -1146,16 +1149,6 @@ impl<'a> Parser<'a> {
                 self.dcx().emit_err(errors::TraitAliasCannotBeImplRestricted { span: whole_span });
             }
 
-            if had_colon && !colon_bounds.is_empty() {
-                // Don't emit the error here — parse_assoc_item will intercept
-                // TraitAlias items from associated context and accept colon bounds.
-                // For standalone trait aliases, ast_validation will reject this.
-                // Store the colon_bounds temporarily — they're in `colon_bounds`
-                // but TraitAlias doesn't carry them. We use a gate span to track.
-                let span = span_at_colon.to(span_before_eq);
-                self.psess.gated_spans.gate(sym::associated_traits, span);
-            }
-
             self.psess.gated_spans.gate(sym::trait_alias, whole_span);
 
             Ok(ItemKind::TraitAlias(Box::new(TraitAlias {
@@ -1165,75 +1158,21 @@ impl<'a> Parser<'a> {
                 bounds: value_bounds,
             })))
         } else {
-            // It's a normal trait, unless we see `;`, `=`, or `where` followed
-            // by `;`/`=` (associated trait forms).
-            // Parse where clause first if present.
-            if self.check_keyword(exp!(Where)) {
+            // It's a normal trait with a body.
+            if !generics.where_clause.has_where_token {
                 generics.where_clause = self.parse_where_clause()?;
             }
-            if self.token == TokenKind::Semi || self.token.kind == token::Eq {
-                // This is either an associated trait (in trait/impl body, handled
-                // by parse_assoc_item) or a standalone incomplete trait.
-                // Gate it — the feature gate check will enforce this.
-                self.psess.gated_spans.gate(sym::associated_traits, ident.span);
-                let value =
-                    if self.eat(exp!(Eq)) { self.parse_generic_bounds()? } else { Vec::new() };
-                let has_value = !value.is_empty();
-                self.expect_semi()?;
-
-                // Return as Trait with the colon bounds + value stored.
-                // parse_assoc_item will intercept and convert to AssocItemKind::Trait.
-                // We encode the value bounds in the items field as a marker by
-                // returning Trait with both bounds (colon) and the value accessible
-                // through parse_assoc_item which matches on Trait.
-                // Store value info: we'll use TraitAlias for value case, Trait for no-value.
-                if has_value {
-                    // Return as TraitAlias with colon bounds stored in generics where-clause
-                    // predicates (as a transport mechanism).
-                    // Actually simpler: return Trait for all cases.
-                    // The colon bounds go in `bounds`, the value is lost.
-                    // For now: just return Trait, lose the value.
-                    // The impl provides the real value anyway.
-                    Ok(ItemKind::Trait(Box::new(Trait {
-                        constness,
-                        is_auto,
-                        safety,
-                        impl_restriction,
-                        ident,
-                        generics,
-                        bounds,
-                        items: ThinVec::new(),
-                    })))
-                } else {
-                    Ok(ItemKind::Trait(Box::new(Trait {
-                        constness,
-                        is_auto,
-                        safety,
-                        impl_restriction,
-                        ident,
-                        generics,
-                        bounds,
-                        items: ThinVec::new(),
-                    })))
-                }
-            } else {
-                // It's a normal trait with a body.
-                if !generics.where_clause.has_where_token {
-                    generics.where_clause = self.parse_where_clause()?;
-                }
-                let items =
-                    self.parse_item_list(attrs, |p| p.parse_trait_item(ForceCollect::No))?;
-                Ok(ItemKind::Trait(Box::new(Trait {
-                    constness,
-                    is_auto,
-                    safety,
-                    impl_restriction,
-                    ident,
-                    generics,
-                    bounds,
-                    items,
-                })))
-            }
+            let items = self.parse_item_list(attrs, |p| p.parse_trait_item(ForceCollect::No))?;
+            Ok(ItemKind::Trait(Box::new(Trait {
+                constness,
+                is_auto,
+                safety,
+                impl_restriction,
+                ident,
+                generics,
+                bounds,
+                items,
+            })))
         }
     }
 
@@ -1292,43 +1231,6 @@ impl<'a> Parser<'a> {
                                 define_opaque,
                             }))
                         }
-                        // Associated trait: `trait Bar;` or `trait Bar = Send;`
-                        // These are parsed as ItemKind::Trait (declaration) or
-                        // ItemKind::TraitAlias (definition) by parse_item_trait,
-                        // then intercepted here and converted to AssocItemKind::Trait.
-                        ItemKind::Trait(box Trait { ident, generics, bounds, items, .. }) => {
-                            if !items.is_empty() {
-                                self.dcx().span_err(
-                                    span,
-                                    "associated traits cannot have a body; \
-                                     use `trait Bar;` or `trait Bar = Send;`",
-                                );
-                            }
-                            AssocItemKind::Trait(Box::new(AssocTraitItem {
-                                defaultness: Defaultness::Implicit,
-                                ident,
-                                generics,
-                                bounds,
-                                value: Vec::new(),
-                                has_value: false,
-                            }))
-                        }
-                        ItemKind::TraitAlias(box TraitAlias {
-                            ident, generics, bounds, ..
-                        }) => {
-                            self.psess.gated_spans.gate(sym::associated_traits, span);
-                            // Remove the trait_alias gate that parse_item_trait added,
-                            // since this is an associated trait, not a standalone trait alias.
-                            self.psess.gated_spans.ungate_last(sym::trait_alias, span);
-                            AssocItemKind::Trait(Box::new(AssocTraitItem {
-                                defaultness: Defaultness::Implicit,
-                                ident,
-                                generics,
-                                bounds: Vec::new(),
-                                value: bounds,
-                                has_value: true,
-                            }))
-                        }
                         _ => return self.error_bad_item_kind(span, &kind, "`trait`s or `impl`s"),
                     },
                 };
@@ -1362,6 +1264,64 @@ impl<'a> Parser<'a> {
             after_where_clause,
             bounds,
             ty,
+        })))
+    }
+
+    /// Parses an associated trait item (inside a trait or impl block).
+    ///
+    /// ```ebnf
+    /// AssocTrait = "trait" Ident Generics? (":" GenericBounds)?
+    ///              WhereClause? ("=" GenericBounds WhereClause?)? ";" ;
+    /// ```
+    /// The `"trait"` has already been eaten.
+    fn parse_assoc_trait_item(&mut self, defaultness: Defaultness) -> PResult<'a, ItemKind> {
+        let lo = self.prev_token.span; // span of `trait` keyword
+        let ident = self.parse_ident()?;
+        let mut generics = self.parse_generics()?;
+
+        // Parse optional colon and declaration bounds (e.g., `trait Bar: Clone;`).
+        let bounds = if self.eat(exp!(Colon)) { self.parse_generic_bounds()? } else { Vec::new() };
+
+        // Parse optional where clause before `=`.
+        if self.check_keyword(exp!(Where)) {
+            generics.where_clause = self.parse_where_clause()?;
+        }
+
+        // Parse optional `= value` bounds (e.g., `trait Bar = Send + Sync;`).
+        let (value, has_value) = if self.eat(exp!(Eq)) {
+            let v = self.parse_generic_bounds()?;
+            // Parse optional where clause after value bounds.
+            if self.check_keyword(exp!(Where)) {
+                generics.where_clause = self.parse_where_clause()?;
+            }
+            (v, true)
+        } else {
+            (Vec::new(), false)
+        };
+
+        // Error recovery: associated traits cannot have a body.
+        if self.token == token::OpenBrace {
+            self.dcx().span_err(
+                self.token.span,
+                "associated traits cannot have a body; \
+                 use `trait Bar;` or `trait Bar = Send;`",
+            );
+            // Skip the body.
+            let _ = self.parse_token_tree();
+        } else {
+            self.expect_semi()?;
+        }
+
+        let span = lo.to(self.prev_token.span);
+        self.psess.gated_spans.gate(sym::associated_traits, span);
+
+        Ok(ItemKind::AssocTrait(Box::new(AssocTraitItem {
+            defaultness,
+            ident,
+            generics,
+            bounds,
+            value,
+            has_value,
         })))
     }
 

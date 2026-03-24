@@ -86,9 +86,9 @@ impl S {
     //~^ ERROR struct is not supported in `trait`s or `impl`s
     default union foo {} //~ ERROR a union cannot be `default`
     //~^ ERROR union is not supported in `trait`s or `impl`s
-    default trait foo {} //~ ERROR a trait cannot be `default`
-    default trait foo = Ord; //~ ERROR a trait alias cannot be `default`
+    default trait foo {} //~ ERROR associated traits cannot have a body
     //~^ ERROR associated traits are experimental
+    default trait foo = Ord; //~ ERROR associated traits are experimental
     default impl foo {} //~ ERROR inherent impls cannot be default
     //~^ ERROR implementation is not supported in `trait`s or `impl`s
     default!();
@@ -122,9 +122,9 @@ trait T {
     //~^ ERROR struct is not supported in `trait`s or `impl`s
     default union foo {} //~ ERROR a union cannot be `default`
     //~^ ERROR union is not supported in `trait`s or `impl`s
-    default trait foo {} //~ ERROR a trait cannot be `default`
-    default trait foo = Ord; //~ ERROR a trait alias cannot be `default`
+    default trait foo {} //~ ERROR associated traits cannot have a body
     //~^ ERROR associated traits are experimental
+    default trait foo = Ord; //~ ERROR associated traits are experimental
     default impl foo {} //~ ERROR inherent impls cannot be default
     //~^ ERROR implementation is not supported in `trait`s or `impl`s
     default!();

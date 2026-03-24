@@ -121,6 +121,7 @@ impl<'a, 'ra, 'tcx> visit::Visitor<'a> for DefCollector<'a, 'ra, 'tcx> {
             ItemKind::Mod(..) => DefKind::Mod,
             ItemKind::Trait(..) => DefKind::Trait,
             ItemKind::TraitAlias(..) => DefKind::TraitAlias,
+            ItemKind::AssocTrait(..) => DefKind::AssocTrait,
             ItemKind::Enum(..) => DefKind::Enum,
             ItemKind::Struct(..) => DefKind::Struct,
             ItemKind::Union(..) => DefKind::Union,

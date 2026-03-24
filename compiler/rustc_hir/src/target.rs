@@ -182,6 +182,7 @@ impl Target {
             ast::ItemKind::Union(..) => Target::Union,
             ast::ItemKind::Trait(..) => Target::Trait,
             ast::ItemKind::TraitAlias(..) => Target::TraitAlias,
+            ast::ItemKind::AssocTrait(..) => Target::AssocTy,
             ast::ItemKind::Impl(ref i) => Target::Impl { of_trait: i.of_trait.is_some() },
             ast::ItemKind::MacCall(..) => Target::MacroCall,
             ast::ItemKind::MacroDef(..) => Target::MacroDef,

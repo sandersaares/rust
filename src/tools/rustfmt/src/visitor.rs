@@ -623,6 +623,11 @@ impl<'b, 'a: 'b> FmtVisitor<'a> {
                     // For now, leave the contents of the Span unformatted.
                     self.push_rewrite(item.span, None)
                 }
+                ast::ItemKind::AssocTrait(..) => {
+                    // Associated trait items are handled via AssocItemKind::Trait.
+                    // If we reach here, leave the contents of the Span unformatted.
+                    self.push_rewrite(item.span, None)
+                }
             };
         }
         self.skip_context = skip_context_saved;

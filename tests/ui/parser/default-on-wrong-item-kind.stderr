@@ -477,21 +477,11 @@ LL |     default union foo {}
    |
    = help: consider moving the union out to a nearby module scope
 
-error: a trait cannot be `default`
-  --> $DIR/default-on-wrong-item-kind.rs:89:5
+error: associated traits cannot have a body; use `trait Bar;` or `trait Bar = Send;`
+  --> $DIR/default-on-wrong-item-kind.rs:89:23
    |
 LL |     default trait foo {}
-   |     ^^^^^^^ `default` because of this
-   |
-   = note: only associated `fn`, `const`, and `type` items can be `default`
-
-error: a trait alias cannot be `default`
-  --> $DIR/default-on-wrong-item-kind.rs:90:5
-   |
-LL |     default trait foo = Ord;
-   |     ^^^^^^^ `default` because of this
-   |
-   = note: only associated `fn`, `const`, and `type` items can be `default`
+   |                       ^
 
 error: inherent impls cannot be default
   --> $DIR/default-on-wrong-item-kind.rs:92:18
@@ -685,21 +675,11 @@ LL |     default union foo {}
    |
    = help: consider moving the union out to a nearby module scope
 
-error: a trait cannot be `default`
-  --> $DIR/default-on-wrong-item-kind.rs:125:5
+error: associated traits cannot have a body; use `trait Bar;` or `trait Bar = Send;`
+  --> $DIR/default-on-wrong-item-kind.rs:125:23
    |
 LL |     default trait foo {}
-   |     ^^^^^^^ `default` because of this
-   |
-   = note: only associated `fn`, `const`, and `type` items can be `default`
-
-error: a trait alias cannot be `default`
-  --> $DIR/default-on-wrong-item-kind.rs:126:5
-   |
-LL |     default trait foo = Ord;
-   |     ^^^^^^^ `default` because of this
-   |
-   = note: only associated `fn`, `const`, and `type` items can be `default`
+   |                       ^
 
 error: inherent impls cannot be default
   --> $DIR/default-on-wrong-item-kind.rs:128:18
@@ -768,20 +748,40 @@ LL |     default macro_rules! foo {}
    = help: consider moving the macro definition out to a nearby module scope
 
 error[E0658]: associated traits are experimental
-  --> $DIR/default-on-wrong-item-kind.rs:90:5
+  --> $DIR/default-on-wrong-item-kind.rs:89:13
    |
-LL |     default trait foo = Ord;
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^
+LL |     default trait foo {}
+   |             ^^^^^^^^^^^^
    |
    = note: see issue #99999 <https://github.com/rust-lang/rust/issues/99999> for more information
    = help: add `#![feature(associated_traits)]` to the crate attributes to enable
    = note: this compiler was built on YYYY-MM-DD; consider upgrading it if it is out of date
 
 error[E0658]: associated traits are experimental
-  --> $DIR/default-on-wrong-item-kind.rs:126:5
+  --> $DIR/default-on-wrong-item-kind.rs:91:13
    |
 LL |     default trait foo = Ord;
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^
+   |             ^^^^^^^^^^^^^^^^
+   |
+   = note: see issue #99999 <https://github.com/rust-lang/rust/issues/99999> for more information
+   = help: add `#![feature(associated_traits)]` to the crate attributes to enable
+   = note: this compiler was built on YYYY-MM-DD; consider upgrading it if it is out of date
+
+error[E0658]: associated traits are experimental
+  --> $DIR/default-on-wrong-item-kind.rs:125:13
+   |
+LL |     default trait foo {}
+   |             ^^^^^^^^^^^^
+   |
+   = note: see issue #99999 <https://github.com/rust-lang/rust/issues/99999> for more information
+   = help: add `#![feature(associated_traits)]` to the crate attributes to enable
+   = note: this compiler was built on YYYY-MM-DD; consider upgrading it if it is out of date
+
+error[E0658]: associated traits are experimental
+  --> $DIR/default-on-wrong-item-kind.rs:127:13
+   |
+LL |     default trait foo = Ord;
+   |             ^^^^^^^^^^^^^^^^
    |
    = note: see issue #99999 <https://github.com/rust-lang/rust/issues/99999> for more information
    = help: add `#![feature(associated_traits)]` to the crate attributes to enable

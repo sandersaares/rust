@@ -584,6 +584,7 @@ impl<'v> ast_visit::Visitor<'v> for StatCollector<'v> {
                 Union,
                 Trait,
                 TraitAlias,
+                AssocTrait,
                 Impl,
                 MacCall,
                 MacroDef,

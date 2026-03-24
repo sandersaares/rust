@@ -3673,6 +3673,7 @@ impl Item {
             ItemKind::Fn(i) => Some(&i.generics),
             ItemKind::TyAlias(i) => Some(&i.generics),
             ItemKind::TraitAlias(i) => Some(&i.generics),
+            ItemKind::AssocTrait(i) => Some(&i.generics),
 
             ItemKind::Enum(_, generics, _)
             | ItemKind::Struct(_, generics, _)
@@ -4043,6 +4044,10 @@ pub enum ItemKind {
     ///
     /// E.g., `trait Foo = Bar + Quux;`.
     TraitAlias(Box<TraitAlias>),
+    /// An associated trait (only valid inside trait/impl blocks).
+    ///
+    /// E.g., `trait Elem;` or `trait Elem: Clone = Send;`.
+    AssocTrait(Box<AssocTraitItem>),
     /// An implementation.
     ///
     /// E.g., `impl<A> Foo<A> { .. }` or `impl<A> Trait for Foo<A> { .. }`.
@@ -4076,6 +4081,7 @@ impl ItemKind {
             | ItemKind::Union(ident, ..)
             | ItemKind::Trait(box Trait { ident, .. })
             | ItemKind::TraitAlias(box TraitAlias { ident, .. })
+            | ItemKind::AssocTrait(box AssocTraitItem { ident, .. })
             | ItemKind::MacroDef(ident, _)
             | ItemKind::Delegation(box Delegation { ident, .. }) => Some(ident),
 
@@ -4097,7 +4103,12 @@ impl ItemKind {
             Use(..) | Static(..) | Const(..) | ConstBlock(..) | Fn(..) | Mod(..)
             | GlobalAsm(..) | TyAlias(..) | Struct(..) | Union(..) | Trait(..) | TraitAlias(..)
             | MacroDef(..) | Delegation(..) | DelegationMac(..) => "a",
-            ExternCrate(..) | ForeignMod(..) | MacCall(..) | Enum(..) | Impl { .. } => "an",
+            ExternCrate(..)
+            | ForeignMod(..)
+            | MacCall(..)
+            | Enum(..)
+            | Impl { .. }
+            | AssocTrait(..) => "an",
         }
     }
 
@@ -4118,6 +4129,7 @@ impl ItemKind {
             ItemKind::Union(..) => "union",
             ItemKind::Trait(..) => "trait",
             ItemKind::TraitAlias(..) => "trait alias",
+            ItemKind::AssocTrait(..) => "associated trait",
             ItemKind::MacCall(..) => "item macro invocation",
             ItemKind::MacroDef(..) => "macro definition",
             ItemKind::Impl { .. } => "implementation",
@@ -4136,6 +4148,7 @@ impl ItemKind {
             | Self::Union(_, generics, _)
             | Self::Trait(box Trait { generics, .. })
             | Self::TraitAlias(box TraitAlias { generics, .. })
+            | Self::AssocTrait(box AssocTraitItem { generics, .. })
             | Self::Impl(Impl { generics, .. }) => Some(generics),
 
             Self::ExternCrate(..)
@@ -4215,12 +4228,7 @@ impl From<AssocItemKind> for ItemKind {
             AssocItemKind::Const(item) => ItemKind::Const(item),
             AssocItemKind::Fn(fn_kind) => ItemKind::Fn(fn_kind),
             AssocItemKind::Type(ty_alias_kind) => ItemKind::TyAlias(ty_alias_kind),
-            AssocItemKind::Trait(assoc_trait) => ItemKind::TraitAlias(Box::new(TraitAlias {
-                constness: Const::No,
-                ident: assoc_trait.ident,
-                generics: Generics::default(),
-                bounds: assoc_trait.value,
-            })),
+            AssocItemKind::Trait(item) => ItemKind::AssocTrait(item),
             AssocItemKind::MacCall(a) => ItemKind::MacCall(a),
             AssocItemKind::Delegation(delegation) => ItemKind::Delegation(delegation),
             AssocItemKind::DelegationMac(delegation) => ItemKind::DelegationMac(delegation),
@@ -4236,6 +4244,7 @@ impl TryFrom<ItemKind> for AssocItemKind {
             ItemKind::Const(item) => AssocItemKind::Const(item),
             ItemKind::Fn(fn_kind) => AssocItemKind::Fn(fn_kind),
             ItemKind::TyAlias(ty_kind) => AssocItemKind::Type(ty_kind),
+            ItemKind::AssocTrait(item) => AssocItemKind::Trait(item),
             ItemKind::MacCall(a) => AssocItemKind::MacCall(a),
             ItemKind::Delegation(d) => AssocItemKind::Delegation(d),
             ItemKind::DelegationMac(d) => AssocItemKind::DelegationMac(d),

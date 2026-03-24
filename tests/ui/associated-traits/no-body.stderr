@@ -1,8 +1,8 @@
 error: associated traits cannot have a body; use `trait Bar;` or `trait Bar = Send;`
-  --> $DIR/no-body.rs:8:5
+  --> $DIR/no-body.rs:8:17
    |
 LL |     trait Inner { fn foo(&self); }
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |                 ^
 
 error: aborting due to 1 previous error
 
