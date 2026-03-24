@@ -1998,6 +1998,11 @@ impl<'db> Interner for DbInterner<'db> {
         false
     }
 
+    fn is_assoc_trait(self, _def_id: Self::DefId) -> bool {
+        // FIXME(associated_traits)
+        false
+    }
+
     fn delay_bug(self, msg: impl ToString) -> Self::ErrorGuaranteed {
         panic!("Bug encountered in next-trait-solver: {}", msg.to_string())
     }

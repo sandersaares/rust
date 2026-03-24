@@ -377,6 +377,11 @@ where
                 );
             }
 
+            // Associated traits are not types — they cannot be normalized.
+            if cx.is_assoc_trait(target_item_def_id) {
+                return Err(NoSolution);
+            }
+
             // Finally we construct the actual value of the associated type.
             let term = match goal.predicate.alias.kind(cx) {
                 ty::AliasTermKind::ProjectionTy => {

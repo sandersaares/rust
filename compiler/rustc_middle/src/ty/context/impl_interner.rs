@@ -659,6 +659,10 @@ impl<'tcx> Interner for TyCtxt<'tcx> {
         self.is_impl_trait_in_trait(def_id)
     }
 
+    fn is_assoc_trait(self, def_id: DefId) -> bool {
+        self.def_kind(def_id) == DefKind::AssocTrait
+    }
+
     fn delay_bug(self, msg: impl ToString) -> ErrorGuaranteed {
         self.dcx().span_delayed_bug(DUMMY_SP, msg.to_string())
     }
