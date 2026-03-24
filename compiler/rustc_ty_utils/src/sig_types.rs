@@ -42,7 +42,7 @@ pub fn walk_types<'tcx, V: SpannedTypeVisitor<'tcx>>(
             }
         }
         // Walk over the type behind the alias
-        DefKind::TyAlias { .. } | DefKind::AssocTy | DefKind::AssocTrait |
+        DefKind::TyAlias { .. } | DefKind::AssocTy |
         // Walk over the type of the item
         DefKind::Static { .. } | DefKind::Const { .. } | DefKind::AssocConst { .. } | DefKind::AnonConst => {
             if let Some(ty) = tcx.hir_node_by_def_id(item).ty() {
@@ -55,6 +55,12 @@ pub fn walk_types<'tcx, V: SpannedTypeVisitor<'tcx>>(
                 // Associated types in traits don't necessarily have a type that we can visit
                 try_visit!(visitor.visit(ty.span, tcx.type_of(item).instantiate_identity()));
             }
+            for (pred, span) in tcx.explicit_predicates_of(item).instantiate_identity(tcx) {
+                try_visit!(visitor.visit(span, pred));
+            }
+        }
+        // Associated traits are not types — only walk their predicates, not type_of.
+        DefKind::AssocTrait => {
             for (pred, span) in tcx.explicit_predicates_of(item).instantiate_identity(tcx) {
                 try_visit!(visitor.visit(span, pred));
             }

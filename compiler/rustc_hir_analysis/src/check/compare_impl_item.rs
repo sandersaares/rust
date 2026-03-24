@@ -45,8 +45,9 @@ pub(super) fn compare_impl_item(
 
     match impl_item.kind {
         ty::AssocKind::Fn { .. } => compare_impl_method(tcx, impl_item, trait_item, impl_trait_ref),
-        ty::AssocKind::Type { .. } | ty::AssocKind::Trait { .. } => {
-            compare_impl_ty(tcx, impl_item, trait_item, impl_trait_ref)
+        ty::AssocKind::Type { .. } => compare_impl_ty(tcx, impl_item, trait_item, impl_trait_ref),
+        ty::AssocKind::Trait { .. } => {
+            compare_impl_assoc_trait(tcx, impl_item, trait_item, impl_trait_ref)
         }
         ty::AssocKind::Const { .. } => {
             compare_impl_const(tcx, impl_item, trait_item, impl_trait_ref)
@@ -2311,75 +2312,86 @@ fn compare_impl_ty<'tcx>(
     check_region_bounds_on_impl_item(tcx, impl_ty, trait_ty, false)?;
     compare_type_predicate_entailment(tcx, impl_ty, trait_ty, impl_trait_ref)?;
 
-    // For associated traits in impls, the type_of returns () which trivially
-    // satisfies most bounds, making check_type_bounds meaningless. Instead,
-    // check that each value trait is a subtrait of each declaration bound.
-    if let Some(local_id) = impl_ty.def_id.as_local() {
-        if tcx.def_kind(local_id) == DefKind::AssocTrait {
-            // This is an associated trait impl item (trait Bar = Send).
-            // Get declaration bound trait DefIds from the trait's item bounds.
-            let trait_item_bounds = tcx.explicit_item_bounds(trait_ty.def_id);
-            let mut decl_bound_trait_ids: Vec<DefId> = Vec::new();
-            for &(clause, _span) in trait_item_bounds.skip_binder() {
-                if let Some(tp) = clause.as_trait_clause() {
-                    let trait_id = tp.skip_binder().def_id();
-                    // Skip implicit Sized/MetaSized bounds — they're not meaningful
-                    // declaration bounds for associated traits.
-                    if tcx.is_lang_item(trait_id, hir::LangItem::Sized)
-                        || tcx.is_lang_item(trait_id, hir::LangItem::MetaSized)
-                        || tcx.is_lang_item(trait_id, hir::LangItem::PointeeSized)
-                    {
-                        continue;
-                    }
-                    decl_bound_trait_ids.push(trait_id);
-                }
+    check_type_bounds(tcx, trait_ty, impl_ty, impl_trait_ref)
+}
+
+/// Checks that an associated trait implementation satisfies the declaration
+/// bounds from the trait definition.
+///
+/// Unlike associated types which go through `check_type_bounds` (comparing
+/// concrete types via `type_of`), associated traits require checking that each
+/// value trait in the impl is a subtrait of each declaration bound in the trait
+/// definition.
+#[instrument(level = "debug", skip(tcx))]
+fn compare_impl_assoc_trait<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    impl_ty: ty::AssocItem,
+    trait_ty: ty::AssocItem,
+    impl_trait_ref: ty::TraitRef<'tcx>,
+) -> Result<(), ErrorGuaranteed> {
+    compare_number_of_generics(tcx, impl_ty, trait_ty, false)?;
+    compare_generic_param_kinds(tcx, impl_ty, trait_ty, false)?;
+    check_region_bounds_on_impl_item(tcx, impl_ty, trait_ty, false)?;
+    compare_type_predicate_entailment(tcx, impl_ty, trait_ty, impl_trait_ref)?;
+
+    // Get declaration bound trait DefIds from the trait's item bounds.
+    let trait_item_bounds = tcx.explicit_item_bounds(trait_ty.def_id);
+    let mut decl_bound_trait_ids: Vec<DefId> = Vec::new();
+    for &(clause, _span) in trait_item_bounds.skip_binder() {
+        if let Some(tp) = clause.as_trait_clause() {
+            let trait_id = tp.skip_binder().def_id();
+            // Skip implicit Sized/MetaSized bounds — they're not meaningful
+            // declaration bounds for associated traits.
+            if tcx.is_lang_item(trait_id, hir::LangItem::Sized)
+                || tcx.is_lang_item(trait_id, hir::LangItem::MetaSized)
+                || tcx.is_lang_item(trait_id, hir::LangItem::PointeeSized)
+            {
+                continue;
             }
-
-            if !decl_bound_trait_ids.is_empty() {
-                // Get the value trait DefIds from the impl's item bounds.
-                let impl_item_bounds = tcx.explicit_item_bounds(impl_ty.def_id);
-                let mut value_trait_ids: Vec<DefId> = Vec::new();
-                for &(clause, _span) in impl_item_bounds.skip_binder() {
-                    if let Some(tp) = clause.as_trait_clause() {
-                        value_trait_ids.push(tp.skip_binder().def_id());
-                    }
-                }
-
-                // For each declaration bound, check that at least one value trait
-                // has it as a supertrait.
-                for &decl_id in &decl_bound_trait_ids {
-                    let mut satisfied = false;
-                    for &value_id in &value_trait_ids {
-                        // Check if decl_id is a supertrait of value_id
-                        let supertrait_ids: Vec<_> =
-                            traits::supertrait_def_ids(tcx, value_id).collect();
-                        if supertrait_ids.contains(&decl_id) {
-                            satisfied = true;
-                            break;
-                        }
-                    }
-                    if !satisfied {
-                        let value_names: Vec<_> =
-                            value_trait_ids.iter().map(|&id| tcx.def_path_str(id)).collect();
-                        return Err(tcx.dcx().span_err(
-                            tcx.def_span(impl_ty.def_id),
-                            format!(
-                                "associated trait bound `{}` is not satisfied: \
-                                     `{}` is not a subtrait of `{}`",
-                                impl_ty.name(),
-                                value_names.join(" + "),
-                                tcx.def_path_str(decl_id),
-                            ),
-                        ));
-                    }
-                }
-            }
-
-            return Ok(());
+            decl_bound_trait_ids.push(trait_id);
         }
     }
 
-    check_type_bounds(tcx, trait_ty, impl_ty, impl_trait_ref)
+    if !decl_bound_trait_ids.is_empty() {
+        // Get the value trait DefIds from the impl's item bounds.
+        let impl_item_bounds = tcx.explicit_item_bounds(impl_ty.def_id);
+        let mut value_trait_ids: Vec<DefId> = Vec::new();
+        for &(clause, _span) in impl_item_bounds.skip_binder() {
+            if let Some(tp) = clause.as_trait_clause() {
+                value_trait_ids.push(tp.skip_binder().def_id());
+            }
+        }
+
+        // For each declaration bound, check that at least one value trait
+        // has it as a supertrait.
+        for &decl_id in &decl_bound_trait_ids {
+            let mut satisfied = false;
+            for &value_id in &value_trait_ids {
+                // Check if decl_id is a supertrait of value_id
+                let supertrait_ids: Vec<_> = traits::supertrait_def_ids(tcx, value_id).collect();
+                if supertrait_ids.contains(&decl_id) {
+                    satisfied = true;
+                    break;
+                }
+            }
+            if !satisfied {
+                let value_names: Vec<_> =
+                    value_trait_ids.iter().map(|&id| tcx.def_path_str(id)).collect();
+                return Err(tcx.dcx().span_err(
+                    tcx.def_span(impl_ty.def_id),
+                    format!(
+                        "associated trait bound `{}` is not satisfied: \
+                                     `{}` is not a subtrait of `{}`",
+                        impl_ty.name(),
+                        value_names.join(" + "),
+                        tcx.def_path_str(decl_id),
+                    ),
+                ));
+            }
+        }
+    }
+
+    Ok(())
 }
 
 /// The equivalent of [compare_method_predicate_entailment], but for associated types
@@ -2527,13 +2539,6 @@ pub(super) fn check_type_bounds<'tcx>(
     impl_ty: ty::AssocItem,
     impl_trait_ref: ty::TraitRef<'tcx>,
 ) -> Result<(), ErrorGuaranteed> {
-    // Associated traits are not types — skip type_of-based checking.
-    if let ty::AssocKind::Trait { .. } = trait_ty.kind {
-        return Ok(());
-    }
-    if let ty::AssocKind::Trait { .. } = impl_ty.kind {
-        return Ok(());
-    }
     // Avoid bogus "type annotations needed `Foo: Bar`" errors on `impl Bar for Foo` in case
     // other `Foo` impls are incoherent.
     tcx.ensure_result().coherent_trait(impl_trait_ref.def_id)?;
@@ -2567,13 +2572,6 @@ pub(super) fn check_type_bounds<'tcx>(
                 ..
             }) => tcx.def_span(impl_ty_def_id),
             hir::Node::ImplItem(hir::ImplItem { kind: hir::ImplItemKind::Type(ty), .. }) => ty.span,
-            // Associated trait items — use def_span
-            hir::Node::TraitItem(hir::TraitItem {
-                kind: hir::TraitItemKind::Trait(..), ..
-            })
-            | hir::Node::ImplItem(hir::ImplItem { kind: hir::ImplItemKind::Trait(..), .. }) => {
-                tcx.def_span(impl_ty_def_id)
-            }
             item => span_bug!(
                 tcx.def_span(impl_ty_def_id),
                 "cannot call `check_type_bounds` on item: {item:?}",

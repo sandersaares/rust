@@ -1139,10 +1139,12 @@ fn should_encode_variances<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, def_kind: Def
         | DefKind::Fn
         | DefKind::Ctor(..)
         | DefKind::AssocFn => true,
-        DefKind::AssocTy | DefKind::AssocTrait => {
-            // Only encode variances for RPITITs (for traits)
+        DefKind::AssocTy => {
+            // Only encode variances for RPITITs
             matches!(tcx.opt_rpitit_info(def_id), Some(ty::ImplTraitInTraitData::Trait { .. }))
         }
+        // Associated traits are never RPITITs and have no variances to encode.
+        DefKind::AssocTrait => false,
         DefKind::Mod
         | DefKind::Variant
         | DefKind::Field

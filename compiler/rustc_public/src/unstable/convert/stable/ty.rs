@@ -1067,9 +1067,6 @@ impl<'tcx> Stable<'tcx> for ty::AssocKind {
                     ty::AssocTypeData::Rpitit(rpitit) => {
                         AssocTypeData::Rpitit(rpitit.stable(tables, cx))
                     }
-                    ty::AssocTypeData::Trait(_) => {
-                        bug!("AssocTypeData::Trait is deprecated")
-                    }
                 },
             },
             ty::AssocKind::Trait { name } => {

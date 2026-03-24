@@ -59,6 +59,7 @@ pub enum Target {
     AssocConst,
     Method(MethodKind),
     AssocTy,
+    AssocTrait,
     ForeignFn,
     ForeignStatic,
     ForeignTy,
@@ -84,7 +85,7 @@ rustc_error_messages::into_diag_arg_using_display!(Target);
 impl Target {
     pub fn is_associated_item(self) -> bool {
         match self {
-            Target::AssocConst | Target::AssocTy | Target::Method(_) => true,
+            Target::AssocConst | Target::AssocTy | Target::AssocTrait | Target::Method(_) => true,
             Target::ExternCrate
             | Target::Use
             | Target::Static
@@ -182,7 +183,7 @@ impl Target {
             ast::ItemKind::Union(..) => Target::Union,
             ast::ItemKind::Trait(..) => Target::Trait,
             ast::ItemKind::TraitAlias(..) => Target::TraitAlias,
-            ast::ItemKind::AssocTrait(..) => Target::AssocTy,
+            ast::ItemKind::AssocTrait(..) => Target::AssocTrait,
             ast::ItemKind::Impl(ref i) => Target::Impl { of_trait: i.of_trait.is_some() },
             ast::ItemKind::MacCall(..) => Target::MacroCall,
             ast::ItemKind::MacroDef(..) => Target::MacroDef,
@@ -210,7 +211,7 @@ impl Target {
                 Target::Method(MethodKind::Trait { body: true })
             }
             TraitItemKind::Type(..) => Target::AssocTy,
-            TraitItemKind::Trait(..) => Target::AssocTy, // reuse target for now
+            TraitItemKind::Trait(..) => Target::AssocTrait,
         }
     }
 
@@ -252,7 +253,7 @@ impl Target {
                 }
             }),
             AssocItemKind::Type(_) => Target::AssocTy,
-            AssocItemKind::Trait(_) => Target::AssocTy,
+            AssocItemKind::Trait(_) => Target::AssocTrait,
             AssocItemKind::Delegation(_) => Target::Delegation { mac: false },
             AssocItemKind::DelegationMac(_) => Target::Delegation { mac: true },
             AssocItemKind::MacCall(_) => Target::MacroCall,
@@ -298,6 +299,7 @@ impl Target {
                 MethodKind::TraitImpl => "trait method in an impl block",
             },
             Target::AssocTy => "associated type",
+            Target::AssocTrait => "associated trait",
             Target::ForeignFn => "foreign function",
             Target::ForeignStatic => "foreign static item",
             Target::ForeignTy => "foreign type",
@@ -349,6 +351,7 @@ impl Target {
                 MethodKind::TraitImpl => "trait methods in impl blocks",
             },
             Target::AssocTy => "associated types",
+            Target::AssocTrait => "associated traits",
             Target::ForeignFn => "foreign functions",
             Target::ForeignStatic => "foreign statics",
             Target::ForeignTy => "foreign types",

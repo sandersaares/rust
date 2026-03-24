@@ -91,7 +91,7 @@ fn target_from_impl_item<'tcx>(tcx: TyCtxt<'tcx>, impl_item: &hir::ImplItem<'_>)
             }
         }
         hir::ImplItemKind::Type(..) => Target::AssocTy,
-        hir::ImplItemKind::Trait(..) => Target::AssocTy,
+        hir::ImplItemKind::Trait(..) => Target::AssocTrait,
     }
 }
 
@@ -906,7 +906,7 @@ impl<'tcx> CheckAttrVisitor<'tcx> {
 
     fn check_doc_alias_value(&self, span: Span, hir_id: HirId, target: Target, alias: Symbol) {
         if let Some(location) = match target {
-            Target::AssocTy => {
+            Target::AssocTy | Target::AssocTrait => {
                 if let DefKind::Impl { .. } =
                     self.tcx.def_kind(self.tcx.local_parent(hir_id.owner.def_id))
                 {
@@ -1536,7 +1536,7 @@ impl<'tcx> CheckAttrVisitor<'tcx> {
 
     fn check_deprecated(&self, hir_id: HirId, attr_span: Span, target: Target) {
         match target {
-            Target::AssocConst | Target::Method(..) | Target::AssocTy
+            Target::AssocConst | Target::Method(..) | Target::AssocTy | Target::AssocTrait
                 if self.tcx.def_kind(self.tcx.local_parent(hir_id.owner.def_id))
                     == DefKind::Impl { of_trait: true } =>
             {

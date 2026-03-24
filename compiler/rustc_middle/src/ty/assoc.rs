@@ -30,10 +30,6 @@ impl AssocItem {
         match self.kind {
             ty::AssocKind::Type { data: AssocTypeData::Normal(name) } => Some(name),
             ty::AssocKind::Type { data: AssocTypeData::Rpitit(_) } => None,
-            ty::AssocKind::Type { data: AssocTypeData::Trait(_) } => {
-                // AssocTypeData::Trait is deprecated — use AssocKind::Trait
-                bug!("AssocTypeData::Trait should not be used; use AssocKind::Trait")
-            }
             ty::AssocKind::Const { name, .. } => Some(name),
             ty::AssocKind::Fn { name, .. } => Some(name),
             ty::AssocKind::Trait { name, .. } => Some(name),
@@ -175,9 +171,6 @@ pub enum AssocTypeData {
     /// `ImplTraitInTraitData` provides additional information about its
     /// source.
     Rpitit(ty::ImplTraitInTraitData),
-    /// The associated item is actually an associated trait, not an associated type.
-    /// It is represented as a Type in the HIR but has distinct semantics.
-    Trait(Symbol),
 }
 
 #[derive(Copy, Clone, PartialEq, Debug, HashStable, Eq, Hash, Encodable, Decodable)]

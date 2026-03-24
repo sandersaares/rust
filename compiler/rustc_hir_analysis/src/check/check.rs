@@ -1093,7 +1093,7 @@ pub(crate) fn check_item_type(tcx: TyCtxt<'_>, def_id: LocalDefId) -> Result<(),
             // avoids this query from having a direct dependency edge on the HIR
             return res;
         }
-        DefKind::AssocTy | DefKind::AssocTrait => {
+        DefKind::AssocTy => {
             tcx.ensure_ok().predicates_of(def_id);
             res = res.and(check_associated_item(tcx, def_id));
 
@@ -1111,13 +1111,26 @@ pub(crate) fn check_item_type(tcx: TyCtxt<'_>, def_id: LocalDefId) -> Result<(),
                     assoc_item.defaultness(tcx).has_value()
                 }
             };
-            if has_type && tcx.def_kind(def_id) != DefKind::AssocTrait {
+            if has_type {
                 tcx.ensure_ok().type_of(def_id);
             }
 
             // Only `Node::Item` and `Node::ForeignItem` still have HIR based
             // checks. Returning early here does not miss any checks and
             // avoids this query from having a direct dependency edge on the HIR
+            return res;
+        }
+        DefKind::AssocTrait => {
+            tcx.ensure_ok().predicates_of(def_id);
+            res = res.and(check_associated_item(tcx, def_id));
+
+            let assoc_item = tcx.associated_item(def_id);
+            if let ty::AssocContainer::Trait = assoc_item.container {
+                tcx.ensure_ok().explicit_item_bounds(def_id);
+                tcx.ensure_ok().explicit_item_self_bounds(def_id);
+                res = res.and(check_trait_item(tcx, def_id));
+            }
+
             return res;
         }
 
