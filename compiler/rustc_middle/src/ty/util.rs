@@ -938,7 +938,8 @@ impl<'tcx> TyCtxt<'tcx> {
             | ty::AliasTermKind::FreeTy
             | ty::AliasTermKind::FreeConst
             | ty::AliasTermKind::UnevaluatedConst
-            | ty::AliasTermKind::ProjectionConst => None,
+            | ty::AliasTermKind::ProjectionConst
+            | ty::AliasTermKind::ProjectionTrait => None,
         }
     }
 }

@@ -384,8 +384,6 @@ pub trait Interner:
 
     fn is_impl_trait_in_trait(self, def_id: Self::DefId) -> bool;
 
-    fn is_assoc_trait(self, def_id: Self::DefId) -> bool;
-
     fn delay_bug(self, msg: impl ToString) -> Self::ErrorGuaranteed;
 
     fn is_general_coroutine(self, coroutine_def_id: Self::CoroutineId) -> bool;

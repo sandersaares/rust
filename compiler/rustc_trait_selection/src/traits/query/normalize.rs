@@ -329,9 +329,9 @@ impl<'a, 'tcx> QueryNormalizer<'a, 'tcx> {
         debug!("QueryNormalizer: c_term = {:#?}", c_term);
         debug!("QueryNormalizer: orig_values = {:#?}", orig_values);
         let result = match term.kind(tcx) {
-            ty::AliasTermKind::ProjectionTy | ty::AliasTermKind::ProjectionConst => {
-                tcx.normalize_canonicalized_projection(c_term)
-            }
+            ty::AliasTermKind::ProjectionTy
+            | ty::AliasTermKind::ProjectionConst
+            | ty::AliasTermKind::ProjectionTrait => tcx.normalize_canonicalized_projection(c_term),
             ty::AliasTermKind::FreeTy | ty::AliasTermKind::FreeConst => {
                 tcx.normalize_canonicalized_free_alias(c_term)
             }

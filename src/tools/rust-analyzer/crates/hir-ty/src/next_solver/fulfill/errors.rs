@@ -436,7 +436,8 @@ impl<'db> BestObligation<'db> {
                 self.detect_error_in_self_ty_normalization(goal, pred.self_ty())?;
             }
             Some(PredicateKind::NormalizesTo(pred)) => {
-                if let AliasTermKind::ProjectionTy | AliasTermKind::ProjectionConst =
+                if let AliasTermKind::ProjectionTy
+                    | AliasTermKind::ProjectionConst =
                     pred.alias.kind(interner)
                 {
                     self.detect_error_in_self_ty_normalization(goal, pred.alias.self_ty())?;
@@ -495,7 +496,8 @@ impl<'db> ProofTreeVisitor<'db> for BestObligation<'db> {
             PredicateKind::NormalizesTo(normalizes_to)
                 if matches!(
                     normalizes_to.alias.kind(interner),
-                    AliasTermKind::ProjectionTy | AliasTermKind::ProjectionConst
+                    AliasTermKind::ProjectionTy
+                    | AliasTermKind::ProjectionConst
                 ) =>
             {
                 ChildMode::Trait(pred.kind().rebind(TraitPredicate {

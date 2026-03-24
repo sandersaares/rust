@@ -3147,7 +3147,8 @@ define_print! {
             | ty::AliasTermKind::FreeConst
             | ty::AliasTermKind::OpaqueTy
             | ty::AliasTermKind::UnevaluatedConst
-            | ty::AliasTermKind::ProjectionConst => {
+            | ty::AliasTermKind::ProjectionConst
+            | ty::AliasTermKind::ProjectionTrait => {
                 p.print_def_path(self.def_id, self.args)?;
             }
         }

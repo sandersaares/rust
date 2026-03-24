@@ -465,6 +465,7 @@ fn normalize_to_error<'a, 'tcx>(
     let trait_ref = ty::Binder::dummy(projection_term.trait_ref(selcx.tcx()));
     let new_value = match projection_term.kind(selcx.tcx()) {
         ty::AliasTermKind::ProjectionTy
+        | ty::AliasTermKind::ProjectionTrait
         | ty::AliasTermKind::InherentTy
         | ty::AliasTermKind::OpaqueTy
         | ty::AliasTermKind::FreeTy => selcx.infcx.next_ty_var(cause.span).into(),

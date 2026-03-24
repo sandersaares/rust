@@ -519,6 +519,11 @@ pub enum AliasTermKind {
     UnevaluatedConst,
     /// An unevaluated const coming from an associated const.
     ProjectionConst,
+    /// A projection `<Type as Trait>::AssocTrait` for associated traits.
+    ///
+    /// Unlike ProjectionTy, associated traits are not types and cannot be normalized.
+    /// They only appear inside AssocTraitBoundPredicate.
+    ProjectionTrait,
     /// A top level const item not part of a trait or impl.
     FreeConst,
     /// An associated const in an inherent `impl`
@@ -530,6 +535,7 @@ impl AliasTermKind {
         match self {
             AliasTermKind::ProjectionTy => "associated type",
             AliasTermKind::ProjectionConst => "associated const",
+            AliasTermKind::ProjectionTrait => "associated trait",
             AliasTermKind::InherentTy => "inherent associated type",
             AliasTermKind::InherentConst => "inherent associated const",
             AliasTermKind::OpaqueTy => "opaque type",
@@ -544,6 +550,7 @@ impl AliasTermKind {
             AliasTermKind::ProjectionTy
             | AliasTermKind::InherentTy
             | AliasTermKind::OpaqueTy
+            | AliasTermKind::ProjectionTrait
             | AliasTermKind::FreeTy => true,
 
             AliasTermKind::UnevaluatedConst
@@ -629,6 +636,7 @@ impl<I: Interner> AliasTerm<I> {
             | AliasTermKind::InherentTy
             | AliasTermKind::OpaqueTy
             | AliasTermKind::FreeTy => {}
+            AliasTermKind::ProjectionTrait => {}
             AliasTermKind::InherentConst
             | AliasTermKind::FreeConst
             | AliasTermKind::UnevaluatedConst
@@ -645,7 +653,7 @@ impl<I: Interner> AliasTerm<I> {
 
     pub fn to_term(self, interner: I) -> I::Term {
         match self.kind(interner) {
-            AliasTermKind::ProjectionTy => Ty::new_alias(
+            AliasTermKind::ProjectionTy | AliasTermKind::ProjectionTrait => Ty::new_alias(
                 interner,
                 ty::AliasTyKind::Projection,
                 ty::AliasTy { def_id: self.def_id, args: self.args, _use_alias_ty_new_instead: () },
@@ -699,7 +707,9 @@ impl<I: Interner> AliasTerm<I> {
         assert!(
             matches!(
                 self.kind(interner),
-                AliasTermKind::ProjectionTy | AliasTermKind::ProjectionConst
+                AliasTermKind::ProjectionTy
+                    | AliasTermKind::ProjectionConst
+                    | AliasTermKind::ProjectionTrait
             ),
             "expected a projection"
         );

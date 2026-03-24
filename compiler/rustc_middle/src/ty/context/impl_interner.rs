@@ -206,7 +206,7 @@ impl<'tcx> Interner for TyCtxt<'tcx> {
 
     fn alias_term_kind(self, alias: ty::AliasTerm<'tcx>) -> ty::AliasTermKind {
         match self.def_kind(alias.def_id) {
-            DefKind::AssocTy | DefKind::AssocTrait => {
+            DefKind::AssocTy => {
                 if let DefKind::Impl { of_trait: false } = self.def_kind(self.parent(alias.def_id))
                 {
                     ty::AliasTermKind::InherentTy
@@ -214,6 +214,7 @@ impl<'tcx> Interner for TyCtxt<'tcx> {
                     ty::AliasTermKind::ProjectionTy
                 }
             }
+            DefKind::AssocTrait => ty::AliasTermKind::ProjectionTrait,
             DefKind::AssocConst { .. } => {
                 if let DefKind::Impl { of_trait: false } = self.def_kind(self.parent(alias.def_id))
                 {
@@ -657,10 +658,6 @@ impl<'tcx> Interner for TyCtxt<'tcx> {
 
     fn is_impl_trait_in_trait(self, def_id: DefId) -> bool {
         self.is_impl_trait_in_trait(def_id)
-    }
-
-    fn is_assoc_trait(self, def_id: DefId) -> bool {
-        self.def_kind(def_id) == DefKind::AssocTrait
     }
 
     fn delay_bug(self, msg: impl ToString) -> ErrorGuaranteed {

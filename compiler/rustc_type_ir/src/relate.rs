@@ -246,6 +246,7 @@ impl<I: Interner> Relate<I> for ty::AliasTerm<I> {
                     b.args,
                 )?,
                 ty::AliasTermKind::ProjectionTy
+                | ty::AliasTermKind::ProjectionTrait
                 | ty::AliasTermKind::FreeConst
                 | ty::AliasTermKind::FreeTy
                 | ty::AliasTermKind::InherentTy

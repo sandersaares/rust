@@ -91,6 +91,9 @@ where
                 self.normalize_free_alias(goal)
             }
             ty::AliasTermKind::UnevaluatedConst => self.normalize_anon_const(goal),
+            // Associated traits are not types — they cannot be normalized.
+            // AssocTraitBound predicates are resolved via compute_assoc_trait_bound_goal.
+            ty::AliasTermKind::ProjectionTrait => Err(NoSolution),
         }
     }
 
@@ -375,11 +378,6 @@ where
                     ecx,
                     cx.delay_bug("associated item has mismatched arguments"),
                 );
-            }
-
-            // Associated traits are not types — they cannot be normalized.
-            if cx.is_assoc_trait(target_item_def_id) {
-                return Err(NoSolution);
             }
 
             // Finally we construct the actual value of the associated type.

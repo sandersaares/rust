@@ -1644,7 +1644,9 @@ impl<'a, 'tcx> TypeErrCtxt<'a, 'tcx> {
                         };
 
                     if let Some(lhs) = lhs.to_alias_term()
-                        && let ty::AliasTermKind::ProjectionTy | ty::AliasTermKind::ProjectionConst = lhs.kind(self.tcx)
+                        && let ty::AliasTermKind::ProjectionTy
+                        | ty::AliasTermKind::ProjectionConst
+                        | ty::AliasTermKind::ProjectionTrait = lhs.kind(self.tcx)
                         && let Some((better_type_err, expected_term)) =
                             derive_better_type_error(lhs, rhs)
                     {
@@ -1653,7 +1655,9 @@ impl<'a, 'tcx> TypeErrCtxt<'a, 'tcx> {
                             better_type_err,
                         )
                     } else if let Some(rhs) = rhs.to_alias_term()
-                        && let ty::AliasTermKind::ProjectionTy | ty::AliasTermKind::ProjectionConst = rhs.kind(self.tcx)
+                        && let ty::AliasTermKind::ProjectionTy
+                        | ty::AliasTermKind::ProjectionConst
+                        | ty::AliasTermKind::ProjectionTrait = rhs.kind(self.tcx)
                         && let Some((better_type_err, expected_term)) =
                             derive_better_type_error(rhs, lhs)
                     {
