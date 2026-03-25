@@ -264,6 +264,56 @@ fn param_env(tcx: TyCtxt<'_>, def_id: DefId) -> ty::ParamEnv<'_> {
         }
     }
 
+    // Expand declaration bounds (supertraits) from associated trait declarations.
+    //
+    // When `trait Elem: Debug` is declared and a function has `T: C::Elem`,
+    // the declaration bounds should be available as `T: Debug` in the
+    // function's param_env. This mirrors how `type Elem: Debug` makes
+    // `<C as Container>::Elem: Debug` available for associated types.
+    {
+        let mut decl_expanded: Vec<ty::Clause<'_>> = Vec::new();
+        for pred in &predicates {
+            if let ty::ClauseKind::AssocTraitBound(atb) = pred.kind().skip_binder() {
+                let trait_item_def_id = atb.projection.def_id;
+                // Get the declaration's bounds from the trait-side item
+                let decl_bounds = tcx.explicit_item_bounds(trait_item_def_id);
+                let args = atb.projection.args;
+                for &(bound, _span) in decl_bounds.skip_binder() {
+                    let concrete = ty::EarlyBinder::bind(bound).instantiate(tcx, args);
+                    // The declaration bounds are on the projection type
+                    // (e.g., `<Self as Container>::Elem: Debug`).
+                    // We need to convert these to bounds on the self_ty
+                    // (e.g., `T: Debug` when `T: C::Elem`).
+                    if let Some(trait_clause) = concrete.as_trait_clause() {
+                        let trait_ref = trait_clause.skip_binder().trait_ref;
+                        let new_trait_ref = ty::TraitRef::new(
+                            tcx,
+                            trait_ref.def_id,
+                            [atb.self_ty],
+                        );
+                        decl_expanded.push(
+                            ty::ClauseKind::Trait(ty::TraitPredicate {
+                                trait_ref: new_trait_ref,
+                                polarity: ty::PredicatePolarity::Positive,
+                            })
+                            .upcast(tcx),
+                        );
+                    } else if let Some(outlives) = concrete.as_type_outlives_clause() {
+                        let region = outlives.skip_binder().1;
+                        decl_expanded.push(
+                            ty::ClauseKind::TypeOutlives(ty::OutlivesPredicate(
+                                atb.self_ty,
+                                region,
+                            ))
+                            .upcast(tcx),
+                        );
+                    }
+                }
+            }
+        }
+        predicates.extend(decl_expanded);
+    }
+
     let local_did = def_id.as_local();
 
     let unnormalized_env = ty::ParamEnv::new(tcx.mk_clauses(&predicates));
