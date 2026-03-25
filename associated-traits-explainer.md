@@ -14,9 +14,10 @@ If you already know what associated traits *do* (declare trait-level constraints
 4. [Stage 2: AST Lowering — Connecting the Dots](#stage-2-ast-lowering--connecting-the-dots)
 5. [Stage 3: Type Checking — Making Sure It All Adds Up](#stage-3-type-checking--making-sure-it-all-adds-up)
 6. [Stage 4: The Trait Solver — Does This Type Actually Satisfy That Bound?](#stage-4-the-trait-solver--does-this-type-actually-satisfy-that-bound)
-7. [What Can't You Do (Yet)](#what-cant-you-do-yet)
-8. [RFC Concepts Explained](#rfc-concepts-explained)
-9. [Open Questions and Their Impact](#open-questions-and-their-impact)
+7. [What Can't You Do](#what-cant-you-do)
+8. [How Bound Expansion Works in Impl Method Bodies](#how-bound-expansion-works-in-impl-method-bodies)
+9. [RFC Concepts Explained](#rfc-concepts-explained)
+10. [Open Questions and Their Impact](#open-questions-and-their-impact)
 
 ---
 
@@ -325,7 +326,7 @@ Goal:  i32: <SyncVec as Container>::Elem
 
 ---
 
-## What Can't You Do (Yet)
+## What Can't You Do
 
 ### Associated traits in type position
 
@@ -362,7 +363,19 @@ fn greet_any(g: &dyn Greetable) -> &str {
 
 The restriction is specifically about using the associated trait *value* as a dyn bound (like `dyn T::Bar`), not about the parent trait being dyn-compatible.
 
-### Bound expansion in impl method bodies
+### Inherent impls
+
+```rust
+impl MyStruct {
+    trait Foo = Send; // ERROR: only in trait impls
+}
+```
+
+Associated traits only make sense inside `trait` and `impl Trait for Type` blocks.
+
+---
+
+## How Bound Expansion Works in Impl Method Bodies
 
 Associated trait bounds are fully expanded inside impl method bodies. When `Self::Arg` is known to be `IntoIterator<Item = i32>` inside the impl, you can use `IntoIterator` methods directly:
 
@@ -384,17 +397,13 @@ impl Handler for SumHandler {
 }
 ```
 
-The compiler achieves this by expanding `AssocTraitBound` predicates in the method's parameter environment: when the impl is known, each `T: Self::Arg` predicate is supplemented with concrete predicates like `T: IntoIterator` and `<T as IntoIterator>::Item = i32`.
+The compiler achieves this by expanding `AssocTraitBound` predicates in the method's parameter environment: when the impl is known, each `T: Self::Arg` predicate is supplemented with concrete predicates like `T: IntoIterator` and `<T as IntoIterator>::Item = i32`. This expansion happens in two places:
 
-### Inherent impls
+1. **`param_env()` construction** (`rustc_ty_utils`): When building the parameter environment for an impl method, `AssocTraitBound` predicates are expanded using the impl's associated trait values. This makes the expanded bounds available to the method body's type checker.
 
-```rust
-impl MyStruct {
-    trait Foo = Send; // ERROR: only in trait impls
-}
-```
+2. **`compare_method_predicate_entailment`** (`rustc_hir_analysis`): When verifying that the impl method's body is compatible with the trait method's signature, the hybrid parameter environment is also expanded. Without this, the compiler would reject the body for using capabilities "not declared by the trait method."
 
-Associated traits only make sense inside `trait` and `impl Trait for Type` blocks.
+Both sites use `TyCtxt::expand_assoc_trait_value` — a shared helper that reads an associated trait impl item's bounds and substitutes the bounded type.
 
 ---
 
