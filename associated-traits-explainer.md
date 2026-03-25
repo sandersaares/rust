@@ -158,14 +158,16 @@ fn transfer<T: Readable + Writable, R: <T as Readable>::Constraint>(data: R) {}
 
 ### What gets rejected at this stage
 
-Using an associated trait with `dyn` *directly as a bound* is caught here:
+Using an associated trait as a `dyn` bound is caught here:
 
 ```rust
 fn with_dyn<T: Foo>(_x: &dyn T::Bar) {}
 // ERROR: "associated traits cannot be used with `dyn`"
 ```
 
-Note that a trait which *has* associated traits can still be used as `dyn Trait` — only using the associated trait itself as a dyn bound is rejected. For example, `dyn Greetable` is fine even if `Greetable` has `trait Style;`, because the associated trait simply isn't used in the dyn context.
+This is rejected because `dyn` types require a compile-time-known vtable layout, but `T::Bar` depends on `T` which is still abstract during type-checking (see ["dyn with associated traits"](#dyn-with-associated-traits-as-bounds) below for the full explanation).
+
+A trait which *has* associated traits can still be used as `dyn Trait` — only using the associated trait itself as a dyn bound is rejected.
 
 ### What happens to trait and impl item definitions
 
@@ -343,7 +345,11 @@ fn with_dyn<T: Foo>(_x: &dyn T::Bar) {}
 // ERROR: "associated traits cannot be used with `dyn`"
 ```
 
-You cannot use an associated trait directly as a dyn bound. However, a trait that *has* associated traits **can** still be used as `dyn Trait`:
+You cannot use an associated trait as a dyn bound. The reason is fundamental to how Rust generics work: Rust type-checks generic function bodies **once**, before monomorphization. A `dyn` type requires a compile-time-known vtable layout — the compiler must know exactly which traits are involved to generate the vtable. But `T::Bar` depends on `T`, which is still abstract during type-checking. The concrete traits behind `T::Bar` only become known at monomorphization, which is too late.
+
+This is the same reason you can't write `fn foo<T>(x: &dyn T)` — the dyn type's identity must be resolved at type-check time, not deferred to monomorphization.
+
+A trait that *has* associated traits **can** still be used as `dyn Trait`:
 
 ```rust
 trait Greetable {
@@ -357,7 +363,7 @@ fn greet_any(g: &dyn Greetable) -> &str {
 }
 ```
 
-The restriction is specifically about using the associated trait *value* in a dyn bound position (like `dyn T::Bar`), not about the parent trait being dyn-compatible. This is analogous to how `dyn Iterator` works even though `Iterator` has an associated type — you just need to specify it (`dyn Iterator<Item = i32>`) when you use it. A future design could add similar binding syntax for associated traits (e.g., `dyn Container<Elem = Send>`).
+The restriction is specifically about using the associated trait *value* as a dyn bound (like `dyn T::Bar`), not about the parent trait being dyn-compatible.
 
 ### Bound expansion in impl method bodies
 
@@ -569,15 +575,7 @@ This is a different and more general feature — it makes traits first-class gen
 
 **Impact**: Low for associated traits specifically. This would be a separate feature with its own design space.
 
-### 3. dyn binding syntax for associated traits
-
-**Status**: Deferred; significant design work needed.
-
-**What it means**: Currently, any trait with an associated trait is automatically dyn-incompatible — you can't use `dyn Container` if `Container` has `trait Elem;`. Making this work would require figuring out how to represent the associated trait's value in a vtable, which is a non-trivial design challenge.
-
-**Impact**: Medium. Many use cases for associated traits (plugin systems, runtime abstraction) also use trait objects. The inability to combine both is a meaningful restriction.
-
-### 6. Negative associated trait bounds
+### 3. Negative associated trait bounds
 
 **Status**: Deferred; intersects with negative impls.
 
