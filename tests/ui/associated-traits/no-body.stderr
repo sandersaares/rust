@@ -1,4 +1,4 @@
-error: associated traits cannot have a body; use `trait Bar;` or `trait Bar = Send;`
+error: associated traits cannot have a body; use `trait Bar;`, `trait Bar = Send;`, or `trait Bar: Clone = Send;`
   --> $DIR/no-body.rs:8:17
    |
 LL |     trait Inner { fn foo(&self); }

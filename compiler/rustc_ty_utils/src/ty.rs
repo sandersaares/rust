@@ -192,6 +192,70 @@ fn param_env(tcx: TyCtxt<'_>, def_id: DefId) -> ty::ParamEnv<'_> {
         );
     }
 
+    // Expand associated trait bounds in impl method bodies.
+    //
+    // When a method inside `impl Trait for ConcreteType` has a parameter like
+    // `arg: impl Self::AssocTrait`, the bound `<ConcreteType as Trait>::AssocTrait`
+    // is an `AssocTraitBound` predicate in the param_env. We expand it here into
+    // concrete `Trait` predicates so that the method body can use the associated trait
+    // value's capabilities (e.g. call methods from `IntoIterator` when
+    // `AssocTrait = IntoIterator<Item = i32>`).
+    if let Some(parent_def_id) = tcx.opt_parent(def_id)
+        && tcx.def_kind(parent_def_id) == (DefKind::Impl { of_trait: true })
+    {
+        let mut expanded: Vec<ty::Clause<'_>> = Vec::new();
+        for pred in &predicates {
+            if let ty::ClauseKind::AssocTraitBound(atb) = pred.kind().skip_binder() {
+                let trait_item_def_id = atb.projection.def_id;
+                // Check that the associated trait item's parent trait is the trait
+                // this impl block is implementing.
+                if let Some(&impl_item_id) =
+                    tcx.impl_item_implementor_ids(parent_def_id).get(&trait_item_def_id)
+                {
+                    // Read the value bounds from the impl's associated trait item
+                    // and substitute the AssocTraitBound's self_ty for the
+                    // projection's self_ty in each bound.
+                    let impl_bounds = tcx.explicit_item_bounds(impl_item_id);
+                    for &(bound, _span) in impl_bounds.skip_binder() {
+                        if let Some(trait_pred) = bound.as_trait_clause() {
+                            let value_trait_ref = trait_pred.skip_binder().trait_ref;
+                            let new_trait_ref = ty::TraitRef::new(
+                                tcx,
+                                value_trait_ref.def_id,
+                                [atb.self_ty],
+                            );
+                            expanded.push(
+                                ty::ClauseKind::Trait(ty::TraitPredicate {
+                                    trait_ref: new_trait_ref,
+                                    polarity: ty::PredicatePolarity::Positive,
+                                })
+                                .upcast(tcx),
+                            );
+                        } else if let Some(proj_pred) = bound.as_projection_clause() {
+                            // Also expand projection predicates like
+                            // `<T as IntoIterator>::Item = i32` so that the
+                            // associated type is resolved inside the body.
+                            let proj = proj_pred.skip_binder();
+                            let new_proj_term = ty::AliasTerm::new(
+                                tcx,
+                                proj.projection_term.def_id,
+                                [atb.self_ty],
+                            );
+                            expanded.push(
+                                ty::ClauseKind::Projection(ty::ProjectionPredicate {
+                                    projection_term: new_proj_term,
+                                    term: proj.term,
+                                })
+                                .upcast(tcx),
+                            );
+                        }
+                    }
+                }
+            }
+        }
+        predicates.extend(expanded);
+    }
+
     let local_did = def_id.as_local();
 
     let unnormalized_env = ty::ParamEnv::new(tcx.mk_clauses(&predicates));

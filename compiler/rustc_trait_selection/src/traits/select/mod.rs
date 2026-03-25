@@ -40,7 +40,7 @@ use super::coherence::{self, Conflict};
 use super::project::ProjectionTermObligation;
 use super::util::closure_trait_ref_and_return_type;
 use super::{
-    ImplDerivedCause, Normalized, Obligation, ObligationCause, ObligationCauseCode,
+    ImplDerivedCause, ImplSource, Normalized, Obligation, ObligationCause, ObligationCauseCode,
     PolyTraitObligation, PredicateObligation, Selection, SelectionError, SelectionResult,
     TraitQueryMode, const_evaluatable, project, util, wf,
 };
@@ -971,8 +971,98 @@ impl<'cx, 'tcx> SelectionContext<'cx, 'tcx> {
                     bug!("AliasRelate is only used by the new solver")
                 }
                 ty::PredicateKind::Ambiguous => Ok(EvaluatedToAmbig),
-                ty::PredicateKind::Clause(ty::ClauseKind::AssocTraitBound(..)) => {
-                    Ok(EvaluatedToErr)
+                ty::PredicateKind::Clause(ty::ClauseKind::AssocTraitBound(pred)) => {
+                    // Associated trait bound: B: <C as Container>::Elem
+                    // Resolve by finding the impl's associated trait value and
+                    // evaluating the resulting Trait predicates for the self_ty.
+                    if pred.self_ty.has_non_region_infer()
+                        || pred.projection.has_non_region_infer()
+                    {
+                        Ok(EvaluatedToAmbig)
+                    } else {
+                        let tcx = self.tcx();
+                        let trait_def_id = pred.projection.trait_def_id(tcx);
+                        let trait_ref = ty::TraitRef::new_from_args(
+                            tcx,
+                            trait_def_id,
+                            tcx.mk_args(
+                                &pred.projection.args
+                                    [..tcx.generics_of(trait_def_id).count()],
+                            ),
+                        );
+
+                        let trait_obligation = Obligation::new(
+                            tcx,
+                            obligation.cause.clone(),
+                            obligation.param_env,
+                            trait_ref,
+                        );
+
+                        match self.select(&trait_obligation) {
+                            Ok(Some(source)) => {
+                                match source {
+                                    ImplSource::UserDefined(impl_source) => {
+                                        let impl_def_id = impl_source.impl_def_id;
+                                        let assoc_item_id = pred.projection.def_id;
+
+                                        if let Ok(assoc_def) =
+                                            super::specialization_graph::assoc_def(
+                                                tcx,
+                                                impl_def_id,
+                                                assoc_item_id,
+                                            )
+                                        {
+                                            let impl_item_def_id = assoc_def.item.def_id;
+                                            let impl_bounds =
+                                                tcx.explicit_item_bounds(impl_item_def_id);
+
+                                            let mut obligations =
+                                                PredicateObligations::new();
+
+                                            for &(bound, _span) in
+                                                impl_bounds.skip_binder()
+                                            {
+                                                if let Some(trait_pred) =
+                                                    bound.as_trait_clause()
+                                                {
+                                                    let value_trait_ref =
+                                                        trait_pred.skip_binder().trait_ref;
+                                                    let new_trait_ref = ty::TraitRef::new(
+                                                        tcx,
+                                                        value_trait_ref.def_id,
+                                                        [pred.self_ty],
+                                                    );
+                                                    obligations.push(obligation.with(
+                                                        tcx,
+                                                        ty::ClauseKind::Trait(
+                                                            ty::TraitPredicate {
+                                                                trait_ref: new_trait_ref,
+                                                                polarity:
+                                                                    ty::PredicatePolarity::Positive,
+                                                            },
+                                                        ),
+                                                    ));
+                                                }
+                                            }
+
+                                            self.evaluate_predicates_recursively(
+                                                previous_stack,
+                                                obligations,
+                                            )
+                                        } else {
+                                            Ok(EvaluatedToErr)
+                                        }
+                                    }
+                                    _ => {
+                                        // Non-user-defined impl (builtin, param, etc.)
+                                        Ok(EvaluatedToOk)
+                                    }
+                                }
+                            }
+                            Ok(None) => Ok(EvaluatedToAmbig),
+                            Err(_) => Ok(EvaluatedToErr),
+                        }
+                    }
                 }
 
                 ty::PredicateKind::Clause(ty::ClauseKind::ConstArgHasType(ct, ty)) => {

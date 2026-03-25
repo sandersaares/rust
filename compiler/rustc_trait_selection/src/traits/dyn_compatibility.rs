@@ -391,7 +391,10 @@ pub fn dyn_compatibility_violations_for_assoc_item(
             }
         }
         ty::AssocKind::Trait { .. } => {
-            // Associated traits make the trait dyn-incompatible
+            // Associated traits do not by themselves make the trait dyn-incompatible.
+            // Using an associated trait in a dyn context (e.g. `dyn T::Elem`) is
+            // rejected at AST lowering, but a trait that merely *has* associated
+            // traits can still be used as `dyn Trait`.
             Vec::new()
         }
     }

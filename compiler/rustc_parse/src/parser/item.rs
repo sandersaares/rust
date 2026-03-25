@@ -1304,7 +1304,7 @@ impl<'a> Parser<'a> {
             self.dcx().span_err(
                 self.token.span,
                 "associated traits cannot have a body; \
-                 use `trait Bar;` or `trait Bar = Send;`",
+                 use `trait Bar;`, `trait Bar = Send;`, or `trait Bar: Clone = Send;`",
             );
             // Skip the body.
             let _ = self.parse_token_tree();

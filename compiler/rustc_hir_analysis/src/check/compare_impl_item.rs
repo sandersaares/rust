@@ -238,6 +238,58 @@ fn compare_method_predicate_entailment<'tcx>(
         );
     }
 
+    // Expand AssocTraitBound predicates into concrete trait predicates.
+    // When the impl provides a value for an associated trait (e.g.,
+    // `trait Arg = IntoIterator<Item = i32>`), we expand any
+    // `T: <ConcreteType as Trait>::AssocTrait` predicates in the
+    // hybrid param_env into the concrete value trait bounds so that
+    // the impl method body can use the expanded capabilities.
+    {
+        let mut expanded: Vec<ty::Clause<'tcx>> = Vec::new();
+        for pred in &hybrid_preds {
+            if let ty::ClauseKind::AssocTraitBound(atb) = pred.kind().skip_binder() {
+                let trait_item_def_id = atb.projection.def_id;
+                if let Some(&impl_item_id) =
+                    tcx.impl_item_implementor_ids(impl_def_id).get(&trait_item_def_id)
+                {
+                    let impl_bounds = tcx.explicit_item_bounds(impl_item_id);
+                    for &(bound, _span) in impl_bounds.skip_binder() {
+                        if let Some(trait_pred) = bound.as_trait_clause() {
+                            let value_trait_ref = trait_pred.skip_binder().trait_ref;
+                            let new_trait_ref = ty::TraitRef::new(
+                                tcx,
+                                value_trait_ref.def_id,
+                                [atb.self_ty],
+                            );
+                            expanded.push(
+                                ty::ClauseKind::Trait(ty::TraitPredicate {
+                                    trait_ref: new_trait_ref,
+                                    polarity: ty::PredicatePolarity::Positive,
+                                })
+                                .upcast(tcx),
+                            );
+                        } else if let Some(proj_pred) = bound.as_projection_clause() {
+                            let proj = proj_pred.skip_binder();
+                            let new_proj_term = ty::AliasTerm::new(
+                                tcx,
+                                proj.projection_term.def_id,
+                                [atb.self_ty],
+                            );
+                            expanded.push(
+                                ty::ClauseKind::Projection(ty::ProjectionPredicate {
+                                    projection_term: new_proj_term,
+                                    term: proj.term,
+                                })
+                                .upcast(tcx),
+                            );
+                        }
+                    }
+                }
+            }
+        }
+        hybrid_preds.extend(expanded);
+    }
+
     let normalize_cause = traits::ObligationCause::misc(impl_m_span, impl_m_def_id);
     let param_env = ty::ParamEnv::new(tcx.mk_clauses(&hybrid_preds));
     // FIXME(-Zhigher-ranked-assumptions): The `hybrid_preds`
