@@ -2,7 +2,6 @@
 //@ compile-flags: --crate-type=lib
 
 #![feature(associated_traits)]
-#![allow(incomplete_features)]
 
 // Cannot have both a type and a trait with the same name
 trait Conflict {

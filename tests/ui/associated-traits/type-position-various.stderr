@@ -1,35 +1,35 @@
 error: expected type, found trait
-  --> $DIR/type-position-various.rs:11:35
+  --> $DIR/type-position-various.rs:10:35
    |
 LL | fn as_return_type<T: Foo>() -> T::Bar {
    |                                   ^^^ unexpected trait
    |
 note: the associated trait is defined here
-  --> $DIR/type-position-various.rs:8:5
+  --> $DIR/type-position-various.rs:7:5
    |
 LL |     trait Bar;
    |     ^^^^^^^^^^
 
 error: expected type, found trait
-  --> $DIR/type-position-various.rs:16:32
+  --> $DIR/type-position-various.rs:15:32
    |
 LL | fn as_parameter<T: Foo>(_x: T::Bar) {
    |                                ^^^ unexpected trait
    |
 note: the associated trait is defined here
-  --> $DIR/type-position-various.rs:8:5
+  --> $DIR/type-position-various.rs:7:5
    |
 LL |     trait Bar;
    |     ^^^^^^^^^^
 
 error: expected type, found trait
-  --> $DIR/type-position-various.rs:21:15
+  --> $DIR/type-position-various.rs:20:15
    |
 LL |     field: T::Bar,
    |               ^^^ unexpected trait
    |
 note: the associated trait is defined here
-  --> $DIR/type-position-various.rs:8:5
+  --> $DIR/type-position-various.rs:7:5
    |
 LL |     trait Bar;
    |     ^^^^^^^^^^

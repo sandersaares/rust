@@ -3,7 +3,6 @@
 // Associated trait constrains what kind of monitors are acceptable.
 
 #![feature(associated_traits)]
-#![allow(incomplete_features)]
 
 trait Monitor {
     type Action;

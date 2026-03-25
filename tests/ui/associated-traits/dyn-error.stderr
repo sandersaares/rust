@@ -1,11 +1,11 @@
 error: associated traits cannot be used with `dyn`
-  --> $DIR/dyn-error.rs:11:30
+  --> $DIR/dyn-error.rs:10:30
    |
 LL | fn with_dyn<T: Foo>(_x: &dyn T::Bar) {}
    |                              ^^^^^^
 
 error[E0224]: at least one trait is required for an object type
-  --> $DIR/dyn-error.rs:11:26
+  --> $DIR/dyn-error.rs:10:26
    |
 LL | fn with_dyn<T: Foo>(_x: &dyn T::Bar) {}
    |                          ^^^^^^^^^^

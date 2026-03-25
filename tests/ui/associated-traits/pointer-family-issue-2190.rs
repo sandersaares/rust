@@ -3,7 +3,6 @@
 // Associated traits restrict what types a GAT can accept.
 
 #![feature(associated_traits)]
-#![allow(incomplete_features)]
 
 trait PointerFamily {
     trait Bounds;

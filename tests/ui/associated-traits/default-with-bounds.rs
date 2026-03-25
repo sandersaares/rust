@@ -3,7 +3,6 @@
 //@ compile-flags: --crate-type=lib
 
 #![feature(associated_traits)]
-#![allow(incomplete_features)]
 
 // Default satisfies the declaration — no explicit bounds on the default form
 trait WithDefault {

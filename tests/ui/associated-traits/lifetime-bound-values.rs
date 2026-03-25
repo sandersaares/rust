@@ -3,7 +3,6 @@
 // See RFC issue #2190 comment by kennytm.
 
 #![feature(associated_traits)]
-#![allow(incomplete_features)]
 
 trait Container {
     trait Bounds;

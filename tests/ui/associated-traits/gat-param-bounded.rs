@@ -4,7 +4,6 @@
 // (proposed by kennytm and AndreiCravtov).
 
 #![feature(associated_traits)]
-#![allow(incomplete_features)]
 
 // Associated trait used alongside GATs in the same trait
 trait Family {

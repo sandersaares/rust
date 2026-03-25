@@ -372,7 +372,7 @@ declare_features! (
     /// Allows the `may_unwind` option in inline assembly.
     (unstable, asm_unwind, "1.58.0", Some(93334)),
     /// Allows associated traits in trait definitions and implementations.
-    (incomplete, associated_traits, "CURRENT_RUSTC_VERSION", Some(99999)),
+    (unstable, associated_traits, "CURRENT_RUSTC_VERSION", Some(99999)),
     /// Allows associated type defaults.
     (unstable, associated_type_defaults, "1.2.0", Some(29661)),
     /// Allows implementing `AsyncDrop`.

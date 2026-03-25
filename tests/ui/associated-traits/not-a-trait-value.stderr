@@ -1,5 +1,5 @@
 error[E0404]: expected trait, found builtin type `u32`
-  --> $DIR/not-a-trait-value.rs:14:17
+  --> $DIR/not-a-trait-value.rs:13:17
    |
 LL |     trait Bar = u32;
    |                 ^^^ not a trait

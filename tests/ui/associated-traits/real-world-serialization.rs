@@ -4,7 +4,6 @@
 //@ compile-flags: --crate-type=lib
 
 #![feature(associated_traits)]
-#![allow(incomplete_features)]
 
 // Types declare what thread-safety guarantees they need
 trait DataStore {

@@ -3,7 +3,6 @@
 // See RFC #2190 comment by JohnScience about DefaultSpecializationExt.
 
 #![feature(associated_traits)]
-#![allow(incomplete_features)]
 
 trait Container {
     trait Constraint;

@@ -3,7 +3,6 @@
 // Tests the core motivating use case from the issue body.
 
 #![feature(associated_traits)]
-#![allow(incomplete_features)]
 
 trait Handler {
     trait Arg;

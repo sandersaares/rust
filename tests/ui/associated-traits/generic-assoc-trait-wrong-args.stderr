@@ -1,5 +1,5 @@
 error[E0107]: associated trait takes 1 generic argument but 2 generic arguments were supplied
-  --> $DIR/generic-assoc-trait-wrong-args.rs:12:33
+  --> $DIR/generic-assoc-trait-wrong-args.rs:11:33
    |
 LL | fn too_many<C: Container, E: C::Elem<i32, i32>>(_c: C, _e: E) {}
    |                                 ^^^^    ----- help: remove the unnecessary generic argument
@@ -7,19 +7,19 @@ LL | fn too_many<C: Container, E: C::Elem<i32, i32>>(_c: C, _e: E) {}
    |                                 expected 1 generic argument
    |
 note: associated trait defined here, with 1 generic parameter: `T`
-  --> $DIR/generic-assoc-trait-wrong-args.rs:8:11
+  --> $DIR/generic-assoc-trait-wrong-args.rs:7:11
    |
 LL |     trait Elem<T>;
    |           ^^^^ -
 
 error[E0107]: missing generics for associated trait `Container::Elem`
-  --> $DIR/generic-assoc-trait-wrong-args.rs:16:32
+  --> $DIR/generic-assoc-trait-wrong-args.rs:15:32
    |
 LL | fn too_few<C: Container, E: C::Elem>(_c: C, _e: E) {}
    |                                ^^^^ expected 1 generic argument
    |
 note: associated trait defined here, with 1 generic parameter: `T`
-  --> $DIR/generic-assoc-trait-wrong-args.rs:8:11
+  --> $DIR/generic-assoc-trait-wrong-args.rs:7:11
    |
 LL |     trait Elem<T>;
    |           ^^^^ -

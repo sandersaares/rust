@@ -1,5 +1,5 @@
 error: associated traits are not allowed in inherent implementations
-  --> $DIR/inherent-impl-error.rs:10:5
+  --> $DIR/inherent-impl-error.rs:9:5
    |
 LL |     trait Bar = Send;
    |     ^^^^^^^^^^^^^^^^^

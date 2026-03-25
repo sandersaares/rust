@@ -3,7 +3,6 @@
 //@ compile-flags: --crate-type=lib
 
 #![feature(associated_traits)]
-#![allow(incomplete_features)]
 
 // Base trait with associated trait
 trait Base {

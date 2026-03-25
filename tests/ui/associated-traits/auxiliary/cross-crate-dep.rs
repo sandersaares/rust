@@ -1,5 +1,4 @@
 #![feature(associated_traits)]
-#![allow(incomplete_features)]
 
 pub trait Container {
     trait Elem;

@@ -3,7 +3,6 @@
 // Tests multiple features interacting together.
 
 #![feature(associated_traits)]
-#![allow(incomplete_features)]
 
 // Trait with generic associated trait that has a default
 trait Transform {

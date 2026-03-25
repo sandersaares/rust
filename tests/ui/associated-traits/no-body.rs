@@ -2,7 +2,6 @@
 //@ compile-flags: --crate-type=lib
 
 #![feature(associated_traits)]
-#![allow(incomplete_features)]
 
 trait Outer {
     trait Inner { fn foo(&self); }

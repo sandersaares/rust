@@ -4,7 +4,6 @@
 // This is the primary example from the RFC #2190 original proposal.
 
 #![feature(associated_traits)]
-#![allow(incomplete_features)]
 
 use std::fmt::Debug;
 

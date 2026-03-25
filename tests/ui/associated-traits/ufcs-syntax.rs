@@ -5,7 +5,6 @@
 // have same-named associated traits.
 
 #![feature(associated_traits)]
-#![allow(incomplete_features)]
 
 trait Container {
     trait Elem;

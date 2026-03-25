@@ -5,7 +5,6 @@
 //@ compile-flags: --crate-type=lib
 
 #![feature(associated_traits)]
-#![allow(incomplete_features)]
 
 trait Greetable {
     trait Style;

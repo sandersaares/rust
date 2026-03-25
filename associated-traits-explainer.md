@@ -26,7 +26,6 @@ Here's the minimal associated traits example. Everything below refers back to th
 
 ```rust
 #![feature(associated_traits)]
-#![allow(incomplete_features)]
 
 // DECLARATION: "Every Container must say what Elem means"
 trait Container {
@@ -114,8 +113,6 @@ Unless you write `#![feature(associated_traits)]`, the parser records the span a
 ```
 error[E0658]: associated traits are experimental
 ```
-
-Because the feature is marked `incomplete` (not just `unstable`), you also need `#![allow(incomplete_features)]` to suppress an additional warning.
 
 ---
 

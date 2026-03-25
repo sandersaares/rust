@@ -3,7 +3,6 @@
 // in the same trait, with cross-references.
 
 #![feature(associated_traits)]
-#![allow(incomplete_features)]
 
 trait Collection {
     trait ElemConstraint;

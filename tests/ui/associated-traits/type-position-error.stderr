@@ -1,11 +1,11 @@
 error: expected type, found trait
-  --> $DIR/type-position-error.rs:12:16
+  --> $DIR/type-position-error.rs:11:16
    |
 LL |     let _x: T::Bar = todo!();
    |                ^^^ unexpected trait
    |
 note: the associated trait is defined here
-  --> $DIR/type-position-error.rs:8:5
+  --> $DIR/type-position-error.rs:7:5
    |
 LL |     trait Bar;
    |     ^^^^^^^^^^

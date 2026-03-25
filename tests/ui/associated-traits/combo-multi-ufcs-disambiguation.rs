@@ -4,7 +4,6 @@
 // both define associated traits with the same name.
 
 #![feature(associated_traits)]
-#![allow(incomplete_features)]
 
 trait Readable {
     trait Constraint;

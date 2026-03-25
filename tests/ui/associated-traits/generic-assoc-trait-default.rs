@@ -3,7 +3,6 @@
 //@ compile-flags: --crate-type=lib
 
 #![feature(associated_traits)]
-#![allow(incomplete_features)]
 
 trait Container {
     trait Elem<T> = Send;  // default generic associated trait

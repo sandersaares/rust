@@ -1,5 +1,5 @@
 error[E0046]: not all trait items implemented, missing: `Bar`
-  --> $DIR/missing-impl.rs:13:1
+  --> $DIR/missing-impl.rs:12:1
    |
 LL |     trait Bar;
    |     ---------- `Bar` from trait

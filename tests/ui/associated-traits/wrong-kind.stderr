@@ -1,5 +1,5 @@
 error[E0325]: item `Bar` is an associated type, which doesn't match its trait `Foo`
-  --> $DIR/wrong-kind.rs:16:5
+  --> $DIR/wrong-kind.rs:15:5
    |
 LL |     trait Bar;
    |     ---------- item in trait
@@ -8,7 +8,7 @@ LL |     type Bar = u32;
    |     ^^^^^^^^^^^^^^^ does not match trait
 
 error[E0046]: not all trait items implemented, missing: `Bar`
-  --> $DIR/wrong-kind.rs:14:1
+  --> $DIR/wrong-kind.rs:13:1
    |
 LL |     trait Bar;
    |     ---------- `Bar` from trait

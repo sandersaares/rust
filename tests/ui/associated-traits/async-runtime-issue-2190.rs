@@ -4,7 +4,6 @@
 // Associated trait controls Send requirements for futures.
 
 #![feature(associated_traits)]
-#![allow(incomplete_features)]
 
 use std::future::Future;
 

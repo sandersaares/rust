@@ -2,7 +2,6 @@
 // `u32` is a type, not a trait.
 
 #![feature(associated_traits)]
-#![allow(incomplete_features)]
 
 trait Foo {
     trait Bar;

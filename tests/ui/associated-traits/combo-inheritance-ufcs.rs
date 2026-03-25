@@ -3,7 +3,6 @@
 // multiple levels of trait hierarchy.
 
 #![feature(associated_traits)]
-#![allow(incomplete_features)]
 
 trait Base {
     trait Requirement;

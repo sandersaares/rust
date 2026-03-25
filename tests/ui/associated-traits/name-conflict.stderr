@@ -1,5 +1,5 @@
 error[E0428]: the name `Bar` is defined multiple times
-  --> $DIR/name-conflict.rs:10:5
+  --> $DIR/name-conflict.rs:9:5
    |
 LL |     type Bar;
    |     --------- previous definition of the type `Bar` here

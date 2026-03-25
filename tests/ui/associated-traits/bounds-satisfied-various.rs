@@ -3,7 +3,6 @@
 //@ compile-flags: --crate-type=lib
 
 #![feature(associated_traits)]
-#![allow(incomplete_features)]
 
 // Clone is a subtrait of Clone (trivially)
 trait Foo { trait Bar: Clone; }

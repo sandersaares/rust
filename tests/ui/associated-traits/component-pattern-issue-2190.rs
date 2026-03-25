@@ -3,7 +3,6 @@
 // Traits for UI framework with associated event constraints.
 
 #![feature(associated_traits)]
-#![allow(incomplete_features)]
 
 trait Component {
     type Props: Clone + 'static;

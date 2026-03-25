@@ -12,7 +12,6 @@ trait resolves to, and consumers can use it as a bound.
 
 ```rust
 #![feature(associated_traits)]
-#![allow(incomplete_features)]
 
 trait Container {
     trait Elem;
@@ -36,7 +35,6 @@ Associated traits can have bounds that constrain what the implementor may provid
 
 ```rust,compile_fail
 #![feature(associated_traits)]
-#![allow(incomplete_features)]
 
 trait Serializable {
     trait Format: Clone; // Format must be a subtrait of Clone
@@ -55,7 +53,6 @@ A trait can provide a default associated trait that impls may override:
 
 ```rust
 #![feature(associated_traits)]
-#![allow(incomplete_features)]
 
 trait Logger {
     trait Filter = Send; // default
@@ -76,7 +73,6 @@ An associated trait can resolve to multiple traits:
 
 ```rust
 #![feature(associated_traits)]
-#![allow(incomplete_features)]
 
 trait Pipeline {
     trait Constraint;

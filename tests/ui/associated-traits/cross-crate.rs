@@ -4,7 +4,6 @@
 //@ aux-build: cross-crate-dep.rs
 
 #![feature(associated_traits)]
-#![allow(incomplete_features)]
 
 extern crate cross_crate_dep;
 
