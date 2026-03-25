@@ -4,8 +4,9 @@ use rustc_hir::def::{DefKind, Namespace};
 use rustc_hir::def_id::DefId;
 use rustc_macros::{Decodable, Encodable, HashStable};
 use rustc_span::{ErrorGuaranteed, Ident, Symbol};
+use rustc_type_ir::Upcast;
 
-use super::{TyCtxt, Visibility};
+use super::{Ty, TyCtxt, Visibility};
 use crate::ty;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug, HashStable, Hash, Encodable, Decodable)]
@@ -324,6 +325,55 @@ impl AssocItems {
 }
 
 impl<'tcx> TyCtxt<'tcx> {
+    /// Reads the `explicit_item_bounds` of an associated trait impl item and
+    /// returns concrete `Clause` predicates with `self_ty` substituted as the
+    /// bounded type.
+    ///
+    /// For example, given `impl Container for Vec { trait Elem = IntoIterator<Item = i32>; }`
+    /// and `impl_item_def_id` pointing to that `Elem` item, calling with `self_ty = T`
+    /// produces:
+    /// - `T: IntoIterator` (trait predicate)
+    /// - `<T as IntoIterator>::Item = i32` (projection predicate)
+    pub fn expand_assoc_trait_value(
+        self,
+        impl_item_def_id: DefId,
+        self_ty: Ty<'tcx>,
+    ) -> Vec<ty::Clause<'tcx>> {
+        let impl_bounds = self.explicit_item_bounds(impl_item_def_id);
+        let mut expanded = Vec::new();
+
+        for &(bound, _span) in impl_bounds.skip_binder() {
+            if let Some(trait_pred) = bound.as_trait_clause() {
+                let value_trait_ref = trait_pred.skip_binder().trait_ref;
+                let new_trait_ref =
+                    ty::TraitRef::new(self, value_trait_ref.def_id, [self_ty]);
+                expanded.push(
+                    ty::ClauseKind::Trait(ty::TraitPredicate {
+                        trait_ref: new_trait_ref,
+                        polarity: ty::PredicatePolarity::Positive,
+                    })
+                    .upcast(self),
+                );
+            } else if let Some(proj_pred) = bound.as_projection_clause() {
+                let proj = proj_pred.skip_binder();
+                let new_proj_term = ty::AliasTerm::new(
+                    self,
+                    proj.projection_term.def_id,
+                    [self_ty],
+                );
+                expanded.push(
+                    ty::ClauseKind::Projection(ty::ProjectionPredicate {
+                        projection_term: new_proj_term,
+                        term: proj.term,
+                    })
+                    .upcast(self),
+                );
+            }
+        }
+
+        expanded
+    }
+
     /// Given an `fn_def_id` of a trait or a trait implementation:
     ///
     /// if `fn_def_id` is a function defined inside a trait, then it synthesizes

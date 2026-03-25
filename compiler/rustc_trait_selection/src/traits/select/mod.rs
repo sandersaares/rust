@@ -1013,37 +1013,17 @@ impl<'cx, 'tcx> SelectionContext<'cx, 'tcx> {
                                             )
                                         {
                                             let impl_item_def_id = assoc_def.item.def_id;
-                                            let impl_bounds =
-                                                tcx.explicit_item_bounds(impl_item_def_id);
 
-                                            let mut obligations =
-                                                PredicateObligations::new();
-
-                                            for &(bound, _span) in
-                                                impl_bounds.skip_binder()
-                                            {
-                                                if let Some(trait_pred) =
-                                                    bound.as_trait_clause()
-                                                {
-                                                    let value_trait_ref =
-                                                        trait_pred.skip_binder().trait_ref;
-                                                    let new_trait_ref = ty::TraitRef::new(
-                                                        tcx,
-                                                        value_trait_ref.def_id,
-                                                        [pred.self_ty],
-                                                    );
-                                                    obligations.push(obligation.with(
-                                                        tcx,
-                                                        ty::ClauseKind::Trait(
-                                                            ty::TraitPredicate {
-                                                                trait_ref: new_trait_ref,
-                                                                polarity:
-                                                                    ty::PredicatePolarity::Positive,
-                                                            },
-                                                        ),
-                                                    ));
-                                                }
-                                            }
+                                            // Expand the impl item's value bounds
+                                            // into concrete obligations, then evaluate.
+                                            let obligations: PredicateObligations<'tcx> =
+                                                tcx.expand_assoc_trait_value(
+                                                    impl_item_def_id,
+                                                    pred.self_ty,
+                                                )
+                                                .into_iter()
+                                                .map(|clause| obligation.with(tcx, clause))
+                                                .collect();
 
                                             self.evaluate_predicates_recursively(
                                                 previous_stack,
