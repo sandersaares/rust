@@ -2458,6 +2458,24 @@ fn compare_type_predicate_entailment<'tcx>(
     );
     debug!(?hybrid_preds);
 
+    // Expand AssocTraitBound predicates into concrete trait predicates.
+    // Same expansion as in compare_method_predicate_entailment.
+    {
+        let impl_def_id = impl_ty.container_id(tcx);
+        let mut expanded: Vec<ty::Clause<'tcx>> = Vec::new();
+        for pred in &hybrid_preds {
+            if let ty::ClauseKind::AssocTraitBound(atb) = pred.kind().skip_binder() {
+                let trait_item_def_id = atb.projection.def_id;
+                if let Some(&impl_item_id) =
+                    tcx.impl_item_implementor_ids(impl_def_id).get(&trait_item_def_id)
+                {
+                    expanded.extend(tcx.expand_assoc_trait_value(impl_item_id, atb.self_ty));
+                }
+            }
+        }
+        hybrid_preds.extend(expanded);
+    }
+
     let impl_ty_span = tcx.def_span(impl_ty_def_id);
     let normalize_cause = ObligationCause::misc(impl_ty_span, impl_ty_def_id);
 

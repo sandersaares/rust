@@ -477,7 +477,7 @@ LL |     default union foo {}
    |
    = help: consider moving the union out to a nearby module scope
 
-error: associated traits cannot have a body; use `trait Bar;` or `trait Bar = Send;`
+error: associated traits cannot have a body; use `trait Bar;`, `trait Bar = Send;`, or `trait Bar: Clone = Send;`
   --> $DIR/default-on-wrong-item-kind.rs:89:23
    |
 LL |     default trait foo {}
@@ -675,7 +675,7 @@ LL |     default union foo {}
    |
    = help: consider moving the union out to a nearby module scope
 
-error: associated traits cannot have a body; use `trait Bar;` or `trait Bar = Send;`
+error: associated traits cannot have a body; use `trait Bar;`, `trait Bar = Send;`, or `trait Bar: Clone = Send;`
   --> $DIR/default-on-wrong-item-kind.rs:125:23
    |
 LL |     default trait foo {}

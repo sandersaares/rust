@@ -368,6 +368,16 @@ impl<'tcx> TyCtxt<'tcx> {
                     })
                     .upcast(self),
                 );
+            } else if let Some(outlives_pred) = bound.as_type_outlives_clause() {
+                // Handle lifetime bounds like 'static in `trait Bounds = Send + 'static`
+                let outlives = outlives_pred.skip_binder();
+                expanded.push(
+                    ty::ClauseKind::TypeOutlives(ty::OutlivesPredicate(
+                        self_ty,
+                        outlives.1,
+                    ))
+                    .upcast(self),
+                );
             }
         }
 
