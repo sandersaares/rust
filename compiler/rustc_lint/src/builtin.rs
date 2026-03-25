@@ -1524,7 +1524,8 @@ impl<'tcx> LateLintPass<'tcx> for TrivialConstraints {
                     // Users don't write this directly, only via another trait ref.
                     | ty::ClauseKind::HostEffect(..)
                     // Associated trait bounds are resolved during trait solving
-                    | ty::ClauseKind::AssocTraitBound(..) => continue,
+                    | ty::ClauseKind::AssocTraitBound(..)
+                    | ty::ClauseKind::AssocTraitValueConstraint(..) => continue,
                 };
                 if predicate.is_global() {
                     cx.emit_span_lint(

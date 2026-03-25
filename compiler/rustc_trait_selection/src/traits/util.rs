@@ -82,7 +82,8 @@ pub fn expand_trait_aliases<'tcx>(
             | ty::ClauseKind::ConstEvaluatable(_)
             | ty::ClauseKind::UnstableFeature(_)
             | ty::ClauseKind::HostEffect(..)
-            | ty::ClauseKind::AssocTraitBound(..) => {}
+            | ty::ClauseKind::AssocTraitBound(..)
+            | ty::ClauseKind::AssocTraitValueConstraint(..) => {}
         }
     }
 

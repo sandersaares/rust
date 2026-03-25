@@ -249,6 +249,7 @@ fn predicate_references_self<'tcx>(
         | ty::ClauseKind::HostEffect(..)
         | ty::ClauseKind::UnstableFeature(_)
         | ty::ClauseKind::AssocTraitBound(..)
+        | ty::ClauseKind::AssocTraitValueConstraint(..)
          => None,
     }
 }
@@ -306,7 +307,8 @@ fn generics_require_sized_self(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
         | ty::ClauseKind::ConstEvaluatable(_)
         | ty::ClauseKind::UnstableFeature(_)
         | ty::ClauseKind::HostEffect(..)
-        | ty::ClauseKind::AssocTraitBound(..) => false,
+        | ty::ClauseKind::AssocTraitBound(..)
+        | ty::ClauseKind::AssocTraitValueConstraint(..) => false,
     })
 }
 

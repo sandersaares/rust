@@ -411,7 +411,8 @@ pub(crate) fn clean_predicate<'tcx>(
         // FIXME(const_trait_impl): We can probably use this `HostEffect` pred to render `~const`.
         | ty::ClauseKind::HostEffect(_)
         // FIXME(associated_traits): Render associated trait bounds in docs.
-        | ty::ClauseKind::AssocTraitBound(..) => None,
+        | ty::ClauseKind::AssocTraitBound(..)
+        | ty::ClauseKind::AssocTraitValueConstraint(..) => None,
     }
 }
 

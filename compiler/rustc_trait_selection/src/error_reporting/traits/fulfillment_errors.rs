@@ -635,6 +635,23 @@ impl<'a, 'tcx> TypeErrCtxt<'a, 'tcx> {
                             obligation
                         )
                     }
+                    ty::PredicateKind::Clause(ty::ClauseKind::AssocTraitValueConstraint(pred)) => {
+                        let tcx = self.tcx;
+                        let projection_name = tcx.item_name(pred.projection.def_id);
+                        let required_name = tcx.def_path_str(pred.required_trait);
+                        let parent_trait = tcx.parent(pred.projection.def_id);
+                        let parent_name = tcx.def_path_str(parent_trait);
+
+                        struct_span_code_err!(
+                            self.dcx(),
+                            span,
+                            E0277,
+                            "associated trait value `{projection_name}` does not include `{required_name}`"
+                        )
+                        .with_note(format!(
+                            "required by `where <_ as {parent_name}>::{projection_name}: {required_name}`"
+                        ))
+                    }
 
                     ty::PredicateKind::Subtype(predicate) => {
                         // Errors for Subtype predicates show up as

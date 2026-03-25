@@ -959,6 +959,25 @@ impl<I: Interner> AssocTraitBoundPredicate<I> {
     }
 }
 
+/// Represents a constraint `where <C as Container>::Elem: Debug` — requiring
+/// that an associated trait's value must include a specific trait. Unlike
+/// `AssocTraitBound` which constrains a *type* relative to a projection, this
+/// constrains the projection's *value* itself.
+#[derive_where(Clone, Copy, Hash, PartialEq, Debug; I: Interner)]
+#[derive(TypeVisitable_Generic, GenericTypeVisitable, TypeFoldable_Generic, Lift_Generic)]
+#[cfg_attr(
+    feature = "nightly",
+    derive(Encodable_NoContext, Decodable_NoContext, HashStable_NoContext)
+)]
+pub struct AssocTraitValueConstraint<I: Interner> {
+    /// The associated trait projection (e.g., `<C as Container>::Elem`).
+    pub projection: AliasTerm<I>,
+    /// The required trait (e.g., `Debug`).
+    pub required_trait: I::TraitId,
+}
+
+impl<I: Interner> Eq for AssocTraitValueConstraint<I> {}
+
 /// Encodes that `a` must be a subtype of `b`. The `a_is_expected` flag indicates
 /// whether the `a` type is the type that we should label as "expected" when
 /// presenting user diagnostics.

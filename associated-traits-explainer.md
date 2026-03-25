@@ -540,34 +540,32 @@ fn make_element<C: Container>() -> impl C::Elem {
 
 This creates an opaque type bounded by the associated trait. The caller sees `impl C::Elem`; the compiler checks that the returned value actually satisfies whatever `C::Elem` resolves to.
 
+### Call-site value constraints (`where C::Elem: Debug`)
+
+You can require that an associated trait's value must include a specific trait at the call site, using where-clause syntax:
+
+```rust
+fn print_element<C: Container, T: C::Elem>(x: T)
+where
+    C::Elem: Debug,  // "the value of Elem must include Debug"
+{
+    println!("{:?}", x);  // Works — T: Debug is derived from T: C::Elem + C::Elem: Debug
+}
+```
+
+This is different from `T: C::Elem + Debug`, which constrains `T` independently of `C::Elem`. The value constraint `C::Elem: Debug` constrains the *Container's impl* — if the impl provides `trait Elem = Send` (no Debug), the call is rejected even if `T` happens to implement Debug on its own.
+
+The compiler implements this with a dedicated `ClauseKind::AssocTraitValueConstraint` predicate. When the solver encounters this predicate for a concrete type, it looks up the impl's associated trait value and checks whether the required trait is among the value traits or their supertraits. For abstract type parameters, the constraint is deferred.
+
+When both `T: C::Elem` and `C::Elem: Debug` are in the param_env, the compiler derives `T: Debug` — allowing the function body to use Debug methods on T.
+
 ---
 
 ## Open Questions and Their Impact
 
 These are unresolved points from the RFC that affect how the feature may evolve. Each has practical consequences for what code you can or can't write.
 
-### 1. `where T::AssocTrait: OtherTrait` — constraints on associated trait values
-
-**Status**: Not implemented; semantics unclear.
-
-**What it means**: Can you write a bound that constrains what an associated trait's *value* must include?
-
-```rust
-fn foo<C: Container>()
-where
-    C::Elem: Debug  // "whatever C::Elem resolves to must include Debug"
-{
-    // ...
-}
-```
-
-This is syntactically valid but currently semantically vacuous — `C::Elem` is a constraint, not a type, so there's no meaningful "type" to apply `Debug` to.
-
-**Why it matters**: This would enable composing associated trait requirements at the call site, not just at the declaration site. Without it, you can only constrain values via declaration bounds (`trait Elem: Debug;`), which applies globally to all impls.
-
-**Impact**: Medium. Declaration bounds cover many cases, but call-site restrictions on values would be more flexible.
-
-### 2. Trait-level generic parameters
+### 1. Trait-level generic parameters
 
 **Status**: Explicitly out of scope for this RFC.
 
@@ -581,7 +579,7 @@ This is a different and more general feature — it makes traits first-class gen
 
 **Impact**: Low for associated traits specifically. This would be a separate feature with its own design space.
 
-### 3. Negative associated trait bounds
+### 2. Negative associated trait bounds
 
 **Status**: Deferred; intersects with negative impls.
 

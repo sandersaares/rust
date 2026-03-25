@@ -1045,6 +1045,89 @@ impl<'cx, 'tcx> SelectionContext<'cx, 'tcx> {
                     }
                 }
 
+                ty::PredicateKind::Clause(ty::ClauseKind::AssocTraitValueConstraint(pred)) => {
+                    // Evaluate: does the projection's value include the required trait?
+                    if pred.projection.has_non_region_infer() {
+                        Ok(EvaluatedToAmbig)
+                    } else {
+                        let tcx = self.tcx();
+                        let trait_def_id = pred.projection.trait_def_id(tcx);
+                        let trait_ref = ty::TraitRef::new_from_args(
+                            tcx,
+                            trait_def_id,
+                            tcx.mk_args(
+                                &pred.projection.args
+                                    [..tcx.generics_of(trait_def_id).count()],
+                            ),
+                        );
+
+                        let trait_obligation = Obligation::new(
+                            tcx,
+                            obligation.cause.clone(),
+                            obligation.param_env,
+                            trait_ref,
+                        );
+
+                        match self.select(&trait_obligation) {
+                            Ok(Some(source)) => {
+                                match source {
+                                    ImplSource::UserDefined(impl_source) => {
+                                        let impl_def_id = impl_source.impl_def_id;
+                                        let assoc_item_id = pred.projection.def_id;
+
+                                        if let Ok(assoc_def) =
+                                            super::specialization_graph::assoc_def(
+                                                tcx,
+                                                impl_def_id,
+                                                assoc_item_id,
+                                            )
+                                        {
+                                            let impl_item_def_id = assoc_def.item.def_id;
+                                            let impl_bounds =
+                                                tcx.explicit_item_bounds(impl_item_def_id);
+
+                                            let mut satisfied = false;
+                                            for &(bound, _span) in
+                                                impl_bounds.skip_binder()
+                                            {
+                                                if let Some(trait_pred) =
+                                                    bound.as_trait_clause()
+                                                {
+                                                    let value_id =
+                                                        trait_pred
+                                                            .skip_binder()
+                                                            .trait_ref
+                                                            .def_id;
+                                                    let supertrait_ids: Vec<_> =
+                                                        super::supertrait_def_ids(tcx, value_id)
+                                                            .collect();
+                                                    if supertrait_ids
+                                                        .contains(&pred.required_trait)
+                                                    {
+                                                        satisfied = true;
+                                                        break;
+                                                    }
+                                                }
+                                            }
+
+                                            if satisfied {
+                                                Ok(EvaluatedToOk)
+                                            } else {
+                                                Ok(EvaluatedToErr)
+                                            }
+                                        } else {
+                                            Ok(EvaluatedToErr)
+                                        }
+                                    }
+                                    _ => Ok(EvaluatedToOk),
+                                }
+                            }
+                            Ok(None) => Ok(EvaluatedToAmbig),
+                            Err(_) => Ok(EvaluatedToErr),
+                        }
+                    }
+                }
+
                 ty::PredicateKind::Clause(ty::ClauseKind::ConstArgHasType(ct, ty)) => {
                     let ct = self.infcx.shallow_resolve_const(ct);
                     let ct_ty = match ct.kind() {

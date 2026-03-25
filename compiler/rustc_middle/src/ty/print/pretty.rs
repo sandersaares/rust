@@ -3209,6 +3209,11 @@ define_print! {
                 write!(p, ": ")?;
                 pred.projection.print(p)?;
             }
+            ty::ClauseKind::AssocTraitValueConstraint(ref pred) => {
+                pred.projection.print(p)?;
+                write!(p, ": ")?;
+                p.print_def_path(pred.required_trait, &[])?;
+            }
         }
     }
 

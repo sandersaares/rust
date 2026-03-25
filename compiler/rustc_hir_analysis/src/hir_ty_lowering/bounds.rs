@@ -457,6 +457,122 @@ impl<'tcx> dyn HirTyLowerer<'tcx> + '_ {
         }
     }
 
+    /// Try to lower `where C::Elem: Debug` into `AssocTraitValueConstraint` predicates.
+    ///
+    /// Returns `Some(predicates)` if the bounded type is an associated trait path,
+    /// `None` if it's a normal type (let the caller proceed with normal lowering).
+    pub fn try_lower_assoc_trait_value_constraint(
+        &self,
+        bounded_ty: &'tcx hir::Ty<'tcx>,
+        bounds: &'tcx [hir::GenericBound<'tcx>],
+        bound_vars: &'tcx ty::List<ty::BoundVariableKind<'tcx>>,
+    ) -> Option<Vec<(ty::Clause<'tcx>, Span)>> {
+        let tcx = self.tcx();
+
+        // Only handle TypeRelative paths (C::Elem).
+        let hir::TyKind::Path(hir::QPath::TypeRelative(qself_ty, segment)) = &bounded_ty.kind
+        else {
+            return None;
+        };
+
+        // The base must resolve to a type parameter.
+        let param_def_id = match &qself_ty.kind {
+            hir::TyKind::Path(hir::QPath::Resolved(
+                _,
+                hir::Path { res: hir::def::Res::Def(DefKind::TyParam, param_did), .. },
+            )) => *param_did,
+            hir::TyKind::Path(hir::QPath::Resolved(
+                _,
+                hir::Path { res: hir::def::Res::SelfTyParam { trait_: param_did }, .. },
+            )) => *param_did,
+            _ => return None,
+        };
+
+        // Non-emitting check: does ANY trait bound on this param have
+        // an associated item with this name and AssocTag::Trait?
+        // Only proceed for local type parameters (not non-lifetime binder vars).
+        let Some(local_param_id) = param_def_id.as_local() else {
+            return None;
+        };
+        if !matches!(tcx.def_kind(local_param_id), DefKind::TyParam) {
+            return None;
+        }
+        let predicates = self.probe_ty_param_bounds(
+            bounded_ty.span,
+            local_param_id,
+            segment.ident,
+        );
+        let has_assoc_trait = predicates
+            .iter_identity_copied()
+            .filter_map(|(p, _)| Some(p.as_trait_clause()?.skip_binder().trait_ref.def_id))
+            .any(|trait_id| {
+                self.probe_trait_that_defines_assoc_item(
+                    trait_id,
+                    ty::AssocTag::Trait,
+                    segment.ident,
+                )
+            });
+
+        if !has_assoc_trait {
+            return None;
+        }
+
+        // Now resolve — we know the associated trait exists.
+        let base_ty = self.lower_ty(qself_ty);
+        let result = self.resolve_type_relative_path(
+            base_ty,
+            qself_ty,
+            ty::AssocTag::Trait,
+            segment,
+            segment.hir_id,
+            bounded_ty.span,
+            None,
+            None,
+        );
+
+        let (item_def_id, bound) = match result {
+            Ok((def_id, bound)) if tcx.def_kind(def_id) == DefKind::AssocTrait => (def_id, bound),
+            _ => return None,
+        };
+
+        // Build the AliasTerm for the associated trait projection.
+        let alias_args = self.lower_generic_args_of_assoc_item(
+            bounded_ty.span,
+            item_def_id,
+            segment,
+            bound.skip_binder().args,
+        );
+        let alias_term = ty::AliasTerm::new_from_args(tcx, item_def_id, alias_args);
+
+        // For each trait bound on the RHS, emit an AssocTraitValueConstraint.
+        let mut preds = Vec::new();
+        for hir_bound in bounds {
+            match hir_bound {
+                hir::GenericBound::Trait(poly_trait_ref) => {
+                    let trait_ref = &poly_trait_ref.trait_ref;
+                    if let hir::def::Res::Def(DefKind::Trait, required_trait_id) =
+                        trait_ref.path.res
+                    {
+                        let span = trait_ref.path.span;
+                        let predicate = ty::Binder::bind_with_vars(
+                            ty::ClauseKind::AssocTraitValueConstraint(
+                                ty::AssocTraitValueConstraint {
+                                    projection: alias_term,
+                                    required_trait: required_trait_id,
+                                },
+                            ),
+                            bound_vars,
+                        );
+                        preds.push((predicate.upcast(tcx), span));
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        Some(preds)
+    }
+
     /// Lower an associated item constraint from the HIR into `bounds`.
     ///
     /// ### A Note on Binders

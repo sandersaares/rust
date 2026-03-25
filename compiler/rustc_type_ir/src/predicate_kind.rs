@@ -59,6 +59,11 @@ pub enum ClauseKind<I: Interner> {
     /// the projection to find the impl's trait value, then replaces this with
     /// concrete `Trait` predicates.
     AssocTraitBound(ty::AssocTraitBoundPredicate<I>),
+
+    /// `where <C as Container>::Elem: Debug` — the associated trait's value
+    /// must include the specified trait. This constrains the projection's value
+    /// rather than a specific type.
+    AssocTraitValueConstraint(ty::AssocTraitValueConstraint<I>),
 }
 
 impl<I: Interner> Eq for ClauseKind<I> {}
@@ -156,6 +161,9 @@ impl<I: Interner> fmt::Debug for ClauseKind<I> {
             }
             ClauseKind::AssocTraitBound(data) => {
                 write!(f, "AssocTraitBound({:?}: {:?})", data.self_ty, data.projection)
+            }
+            ClauseKind::AssocTraitValueConstraint(data) => {
+                write!(f, "AssocTraitValueConstraint({:?}: {:?})", data.projection, data.required_trait)
             }
         }
     }

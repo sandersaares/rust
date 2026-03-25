@@ -217,6 +217,53 @@ fn param_env(tcx: TyCtxt<'_>, def_id: DefId) -> ty::ParamEnv<'_> {
         predicates.extend(expanded);
     }
 
+    // Derive trait bounds from AssocTraitValueConstraint + AssocTraitBound pairs.
+    //
+    // When the param_env contains both `T: C::Elem` (AssocTraitBound) and
+    // `C::Elem: Debug` (AssocTraitValueConstraint), derive `T: Debug`.
+    // This allows code to use the required trait's methods on types bounded
+    // by the associated trait.
+    {
+        // Collect value constraints: projection → required_trait
+        let value_constraints: Vec<_> = predicates
+            .iter()
+            .filter_map(|pred| {
+                if let ty::ClauseKind::AssocTraitValueConstraint(vc) = pred.kind().skip_binder() {
+                    Some((vc.projection, vc.required_trait))
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        if !value_constraints.is_empty() {
+            let mut derived: Vec<ty::Clause<'_>> = Vec::new();
+            for pred in &predicates {
+                if let ty::ClauseKind::AssocTraitBound(atb) = pred.kind().skip_binder() {
+                    // For each value constraint matching this projection...
+                    for &(vc_proj, required_trait) in &value_constraints {
+                        if atb.projection == vc_proj {
+                            // Derive: atb.self_ty: required_trait
+                            let new_trait_ref = ty::TraitRef::new(
+                                tcx,
+                                required_trait,
+                                [atb.self_ty],
+                            );
+                            derived.push(
+                                ty::ClauseKind::Trait(ty::TraitPredicate {
+                                    trait_ref: new_trait_ref,
+                                    polarity: ty::PredicatePolarity::Positive,
+                                })
+                                .upcast(tcx),
+                            );
+                        }
+                    }
+                }
+            }
+            predicates.extend(derived);
+        }
+    }
+
     let local_did = def_id.as_local();
 
     let unnormalized_env = ty::ParamEnv::new(tcx.mk_clauses(&predicates));

@@ -432,6 +432,11 @@ impl<I: Interner> FlagComputation<I> {
                 self.add_ty(self_ty);
                 self.add_alias_term(projection);
             }
+            ty::PredicateKind::Clause(ty::ClauseKind::AssocTraitValueConstraint(
+                ty::AssocTraitValueConstraint { projection, .. },
+            )) => {
+                self.add_alias_term(projection);
+            }
             ty::PredicateKind::Ambiguous => {}
         }
     }

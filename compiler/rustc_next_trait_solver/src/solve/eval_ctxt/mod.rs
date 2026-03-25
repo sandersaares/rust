@@ -589,6 +589,9 @@ where
             ty::PredicateKind::Clause(ty::ClauseKind::AssocTraitBound(predicate)) => {
                 ecx.compute_assoc_trait_bound_goal(Goal { param_env, predicate })
             }
+            ty::PredicateKind::Clause(ty::ClauseKind::AssocTraitValueConstraint(predicate)) => {
+                ecx.compute_assoc_trait_value_constraint_goal(Goal { param_env, predicate })
+            }
             ty::PredicateKind::Subtype(predicate) => {
                 ecx.compute_subtype_goal(Goal { param_env, predicate })
             }

@@ -261,6 +261,22 @@ fn gather_explicit_predicates_of(tcx: TyCtxt<'_>, def_id: LocalDefId) -> ty::Gen
     for predicate in hir_generics.predicates {
         match predicate.kind {
             hir::WherePredicateKind::BoundPredicate(bound_pred) => {
+                let bound_vars = tcx.late_bound_vars(predicate.hir_id);
+
+                // Check if the bounded type is an associated trait path like
+                // `C::Elem` or `<C as Container>::Elem`. If so, emit
+                // AssocTraitValueConstraint predicates instead of normal bounds.
+                if let Some(assoc_trait_predicates) = icx.lowerer()
+                    .try_lower_assoc_trait_value_constraint(
+                        bound_pred.bounded_ty,
+                        bound_pred.bounds,
+                        bound_vars,
+                    )
+                {
+                    predicates.extend(assoc_trait_predicates);
+                    continue;
+                }
+
                 let ty = icx.lowerer().lower_ty_maybe_return_type_notation(bound_pred.bounded_ty);
                 let bound_vars = tcx.late_bound_vars(predicate.hir_id);
 
@@ -790,6 +806,7 @@ pub(super) fn assert_only_contains_predicates_from<'tcx>(
                     | ty::ClauseKind::WellFormed(_)
                     | ty::ClauseKind::UnstableFeature(_)
                     | ty::ClauseKind::AssocTraitBound(_)
+                    | ty::ClauseKind::AssocTraitValueConstraint(_)
                     | ty::ClauseKind::ConstEvaluatable(_) => {
                         bug!(
                             "unexpected non-`Self` predicate when computing \
@@ -819,6 +836,7 @@ pub(super) fn assert_only_contains_predicates_from<'tcx>(
                     | ty::ClauseKind::ConstEvaluatable(_)
                     | ty::ClauseKind::UnstableFeature(_)
                     | ty::ClauseKind::AssocTraitBound(_)
+                    | ty::ClauseKind::AssocTraitValueConstraint(_)
                     | ty::ClauseKind::HostEffect(..) => {
                         bug!(
                             "unexpected non-`Self` predicate when computing \

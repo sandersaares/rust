@@ -159,6 +159,9 @@ where
                 try_visit!(pred.self_ty.visit_with(self));
                 self.visit_projection_term(pred.projection)
             }
+            ty::ClauseKind::AssocTraitValueConstraint(pred) => {
+                self.visit_projection_term(pred.projection)
+            }
         }
     }
 

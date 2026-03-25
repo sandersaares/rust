@@ -56,6 +56,7 @@ impl<'tcx> ExplicitPredicatesMap<'tcx> {
                     | ty::ClauseKind::ConstEvaluatable(_)
                     | ty::ClauseKind::UnstableFeature(_)
                     | ty::ClauseKind::AssocTraitBound(_)
+                    | ty::ClauseKind::AssocTraitValueConstraint(_)
                     | ty::ClauseKind::HostEffect(..) => {}
                 }
             }

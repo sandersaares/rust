@@ -242,6 +242,9 @@ impl<I: Interner, O: Elaboratable<I>> Elaborator<I, O> {
             ty::ClauseKind::AssocTraitBound(_) => {
                 // Nothing to elaborate — resolved during trait solving
             }
+            ty::ClauseKind::AssocTraitValueConstraint(_) => {
+                // Nothing to elaborate — resolved during trait solving
+            }
         }
     }
 }

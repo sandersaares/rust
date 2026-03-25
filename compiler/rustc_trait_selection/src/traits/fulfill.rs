@@ -449,6 +449,17 @@ impl<'a, 'tcx> ObligationProcessor for FulfillProcessor<'a, 'tcx> {
                     ));
                     ProcessResult::Changed(mk_pending(obligation, obligations))
                 }
+                ty::PredicateKind::Clause(ty::ClauseKind::AssocTraitValueConstraint(pred)) => {
+                    let pred = ty::Binder::dummy(
+                        infcx.enter_forall_and_leak_universe(binder.rebind(pred)),
+                    );
+                    let mut obligations = PredicateObligations::with_capacity(1);
+                    obligations.push(obligation.with(
+                        infcx.tcx,
+                        pred.map_bound(|p| ty::ClauseKind::AssocTraitValueConstraint(p)),
+                    ));
+                    ProcessResult::Changed(mk_pending(obligation, obligations))
+                }
             },
             Some(pred) => match pred {
                 ty::PredicateKind::Clause(ty::ClauseKind::Trait(data)) => {
@@ -898,6 +909,86 @@ impl<'a, 'tcx> ObligationProcessor for FulfillProcessor<'a, 'tcx> {
                             }
                             Err(_) => {
                                 // Selection error
+                                ProcessResult::Error(FulfillmentErrorCode::Select(
+                                    SelectionError::Unimplemented,
+                                ))
+                            }
+                        }
+                    }
+                }
+                ty::PredicateKind::Clause(ty::ClauseKind::AssocTraitValueConstraint(pred)) => {
+                    // Associated trait value constraint: <C as Container>::Elem: Debug
+                    // Resolve the projection to find the impl, then check that
+                    // the required trait is among the value traits or their supertraits.
+                    if pred.projection.has_non_region_infer()
+                    {
+                        pending_obligation.stalled_on.clear();
+                        ProcessResult::Unchanged
+                    } else {
+                        let tcx = self.selcx.tcx();
+                        let trait_def_id = pred.projection.trait_def_id(tcx);
+                        let trait_ref = ty::TraitRef::new_from_args(
+                            tcx,
+                            trait_def_id,
+                            tcx.mk_args(
+                                &pred.projection.args[..tcx.generics_of(trait_def_id).count()],
+                            ),
+                        );
+
+                        let trait_obligation = traits::Obligation::new(
+                            tcx,
+                            obligation.cause.clone(),
+                            obligation.param_env,
+                            trait_ref,
+                        );
+
+                        match self.selcx.select(&trait_obligation) {
+                            Ok(Some(ImplSource::UserDefined(impl_source))) => {
+                                let impl_def_id = impl_source.impl_def_id;
+                                let assoc_item_id = pred.projection.def_id;
+
+                                if let Ok(assoc_def) =
+                                    specialization_graph::assoc_def(tcx, impl_def_id, assoc_item_id)
+                                {
+                                    let impl_item_def_id = assoc_def.item.def_id;
+                                    let impl_bounds = tcx.explicit_item_bounds(impl_item_def_id);
+
+                                    // Check if the required trait is among the value's
+                                    // traits or their supertraits.
+                                    let mut satisfied = false;
+                                    for &(bound, _span) in impl_bounds.skip_binder() {
+                                        if let Some(trait_pred) = bound.as_trait_clause() {
+                                            let value_trait_id =
+                                                trait_pred.skip_binder().trait_ref.def_id;
+                                            let supertrait_ids: Vec<_> =
+                                                traits::supertrait_def_ids(tcx, value_trait_id)
+                                                    .collect();
+                                            if supertrait_ids.contains(&pred.required_trait) {
+                                                satisfied = true;
+                                                break;
+                                            }
+                                        }
+                                    }
+
+                                    if satisfied {
+                                        ProcessResult::Changed(Default::default())
+                                    } else {
+                                        ProcessResult::Error(FulfillmentErrorCode::Select(
+                                            SelectionError::Unimplemented,
+                                        ))
+                                    }
+                                } else {
+                                    ProcessResult::Changed(Default::default())
+                                }
+                            }
+                            Ok(Some(_)) => {
+                                ProcessResult::Changed(Default::default())
+                            }
+                            Ok(None) => {
+                                pending_obligation.stalled_on.clear();
+                                ProcessResult::Unchanged
+                            }
+                            Err(_) => {
                                 ProcessResult::Error(FulfillmentErrorCode::Select(
                                     SelectionError::Unimplemented,
                                 ))

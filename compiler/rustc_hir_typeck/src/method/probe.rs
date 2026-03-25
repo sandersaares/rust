@@ -1009,6 +1009,7 @@ impl<'a, 'tcx> ProbeContext<'a, 'tcx> {
                 | ty::ClauseKind::ConstEvaluatable(_)
                 | ty::ClauseKind::UnstableFeature(_)
                 | ty::ClauseKind::AssocTraitBound(..)
+                | ty::ClauseKind::AssocTraitValueConstraint(..)
                 | ty::ClauseKind::HostEffect(..) => None,
             }
         });
