@@ -1,0 +1,21 @@
+error[E0277]: `Rc<RefCell<State>>` cannot be sent between threads safely
+  --> $DIR/universe-isolated-not-send.rs:42:19
+   |
+LL |     assert_send::<HttpClient<Isolated>>();
+   |                   ^^^^^^^^^^^^^^^^^^^^ `Rc<RefCell<State>>` cannot be sent between threads safely
+   |
+   = help: within `HttpClient<Isolated>`, the trait `Send` is not implemented for `Rc<RefCell<State>>`
+note: required because it appears within the type `HttpClient<Isolated>`
+  --> $DIR/universe-isolated-not-send.rs:35:8
+   |
+LL | struct HttpClient<U: Universe> {
+   |        ^^^^^^^^^^
+note: required by a bound in `assert_send`
+  --> $DIR/universe-isolated-not-send.rs:39:19
+   |
+LL | fn assert_send<T: Send>() {}
+   |                   ^^^^ required by this bound in `assert_send`
+
+error: aborting due to 1 previous error
+
+For more information about this error, try `rustc --explain E0277`.
